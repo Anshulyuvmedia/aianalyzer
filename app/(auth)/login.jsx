@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import images from '@/constants/images';
 
 const Login = () => {
@@ -12,6 +13,7 @@ const Login = () => {
     const [password, setPassword] = useState(DUMMY_PASSWORD);
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const buttonScaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -19,7 +21,7 @@ const Login = () => {
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
-            duration: 500,
+            duration: 600,
             useNativeDriver: true,
         }).start();
     }, [fadeAnim]);
@@ -27,9 +29,9 @@ const Login = () => {
     // Handle button press animation
     const handleButtonPressIn = () => {
         Animated.spring(buttonScaleAnim, {
-            toValue: 0.95,
-            friction: 5,
-            tension: 40,
+            toValue: 0.97,
+            friction: 8,
+            tension: 60,
             useNativeDriver: true,
         }).start();
     };
@@ -37,13 +39,13 @@ const Login = () => {
     const handleButtonPressOut = () => {
         Animated.spring(buttonScaleAnim, {
             toValue: 1,
-            friction: 5,
-            tension: 40,
+            friction: 8,
+            tension: 60,
             useNativeDriver: true,
         }).start();
     };
 
-    // Basic email validation
+    // Email validation
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
@@ -52,12 +54,11 @@ const Login = () => {
     // Save session to AsyncStorage
     const saveSession = async (email) => {
         try {
-            const token = 'dummy-token-' + Math.random().toString(36).slice(2); // Replace with real token from backend
-            const userData = { id: 'user-' + email, email }; // Ensure id is included
+            const token = 'dummy-token-' + Math.random().toString(36).slice(2);
+            const userData = { id: 'user-' + email, email };
             await AsyncStorage.setItem('userToken', token);
             await AsyncStorage.setItem('userData', JSON.stringify(userData));
-            await AsyncStorage.setItem('lastRoute', '(root)/(tabs)'); // Set default route after login
-            // console.log('Saved to AsyncStorage:', { token, userData, lastRoute: '(root)/(tabs)' });
+            await AsyncStorage.setItem('lastRoute', '(root)/(tabs)');
         } catch (error) {
             console.error('Error saving session:', error);
             Alert.alert('Error', 'Failed to save session. Please try again.');
@@ -70,7 +71,6 @@ const Login = () => {
         setEmailError('');
         setPasswordError('');
 
-        // Basic input validation
         if (!email) {
             setEmailError('Email is required');
             valid = false;
@@ -87,23 +87,22 @@ const Login = () => {
             valid = false;
         }
 
-        // Dummy credential validation
-        if (valid) {
-            if (email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
-                await saveSession(email);
-                router.replace('/(root)/(tabs)')
-                // Alert.alert('Success', 'Logged in successfully!', [
-                //     { text: 'OK', onPress: () => router.replace('/(root)/(tabs)') },
-                // ]);
-            } else {
-                Alert.alert('Error', 'Invalid email or password. Please use the credentials shown above.');
-            }
+        if (valid && email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
+            await saveSession(email);
+            router.replace('/(root)/(tabs)');
+        } else if (valid) {
+            Alert.alert('Error', 'Invalid email or password. Please use the credentials shown above.');
         }
+    };
+
+    // Handle navigation to registration
+    const handleRegister = () => {
+        router.push('/register');
     };
 
     return (
         <LinearGradient
-            colors={['#25242F', '#151718']}
+            colors={['#1A1A2E', '#16213E']}
             style={styles.container}
         >
             <Animated.View style={[styles.formContainer, { opacity: fadeAnim }]}>
@@ -115,10 +114,11 @@ const Login = () => {
                     />
                 </View>
                 <Text style={styles.title}>Welcome Back</Text>
+                <Text style={styles.subtitle}>Sign in to continue</Text>
 
                 <View style={styles.credentialsContainer}>
                     <Text style={styles.credentialsText}>
-                        Use these credentials to login:
+                        Demo Credentials:
                     </Text>
                     <Text style={styles.credentialsText}>
                         Email: {DUMMY_EMAIL}
@@ -129,63 +129,78 @@ const Login = () => {
                 </View>
 
                 <View style={styles.inputContainer}>
-                    <LinearGradient
-                        colors={['#00FF00', '#00000000']}
-                        start={{ x: 0, y: 1 }}
-                        end={{ x: 0.5, y: 0 }}
-                        style={styles.inputGradient}
-                    >
+                    <View style={styles.inputWrapper}>
+                        <Ionicons
+                            name="mail-outline"
+                            size={20}
+                            color="#9CA3AF"
+                            style={styles.inputIcon}
+                        />
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, styles.inputWithIcon]}
                             placeholder="Email"
-                            placeholderTextColor="gray"
+                            placeholderTextColor="#6B7280"
                             value={email}
                             onChangeText={setEmail}
                             keyboardType="email-address"
                             autoCapitalize="none"
                         />
-                    </LinearGradient>
+                    </View>
                     {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                 </View>
 
                 <View style={styles.inputContainer}>
-                    <LinearGradient
-                        colors={['#00FF00', '#00000000']}
-                        start={{ x: 0, y: 1 }}
-                        end={{ x: 0.5, y: 0 }}
-                        style={styles.inputGradient}
-                    >
+                    <View style={styles.inputWrapper}>
+                        <Ionicons
+                            name="lock-closed-outline"
+                            size={20}
+                            color="#9CA3AF"
+                            style={styles.inputIcon}
+                        />
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, styles.inputWithIcon, styles.passwordInput]}
                             placeholder="Password"
-                            placeholderTextColor="gray"
+                            placeholderTextColor="#6B7280"
                             value={password}
                             onChangeText={setPassword}
-                            secureTextEntry
+                            secureTextEntry={!showPassword}
                             autoCapitalize="none"
                         />
-                    </LinearGradient>
+                        <TouchableOpacity
+                            style={styles.eyeIcon}
+                            onPress={() => setShowPassword(!showPassword)}
+                        >
+                            <Ionicons
+                                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                                size={20}
+                                color="#9CA3AF"
+                            />
+                        </TouchableOpacity>
+                    </View>
                     {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
                 </View>
 
                 <TouchableOpacity
-                    activeOpacity={0.8}
+                    activeOpacity={0.9}
                     onPressIn={handleButtonPressIn}
                     onPressOut={handleButtonPressOut}
                     onPress={handleLogin}
                 >
-                    <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
+                    <Animated.View style={[styles.button, { transform: [{ scale: buttonScaleAnim }] }]}>
                         <LinearGradient
-                            colors={['#00FF00', '#00000000']}
+                            colors={['#10B981', '#059669']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.buttonGradient}
                         >
-                            <View style={styles.button}>
-                                <Text style={styles.buttonText}>Login</Text>
-                            </View>
+                            <Text style={styles.buttonText}>Sign In</Text>
                         </LinearGradient>
                     </Animated.View>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={handleRegister} style={styles.registerContainer}>
+                    <Text style={styles.registerText}>Dont have an account? <Text style={styles.registerLink}>Sign Up</Text>
+                    </Text>
                 </TouchableOpacity>
             </Animated.View>
         </LinearGradient>
@@ -199,80 +214,127 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#1A1A2E',
     },
     formContainer: {
         width: '90%',
-        maxWidth: 400,
-        padding: 20,
-        borderRadius: 12,
-        backgroundColor: '#000',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        maxWidth: 360,
+        padding: 24,
+        borderRadius: 16,
+        backgroundColor: '#1F2937',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
     },
     logoContainer: {
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 24,
     },
     logo: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
     },
     title: {
-        fontSize: 28,
-        fontWeight: '700',
-        marginBottom: 20,
-        textAlign: 'center',
+        fontSize: 24,
+        fontWeight: '600',
         color: '#FFFFFF',
-        fontFamily: 'Questrial-Regular',
+        textAlign: 'center',
+        marginBottom: 8,
+        fontFamily: 'Inter-SemiBold',
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#9CA3AF',
+        textAlign: 'center',
+        marginBottom: 24,
+        fontFamily: 'Inter-Regular',
     },
     credentialsContainer: {
-        marginBottom: 20,
+        backgroundColor: '#374151',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 24,
     },
     credentialsText: {
-        color: '#fff',
+        color: '#D1D5DB',
         fontSize: 14,
         textAlign: 'center',
-        fontFamily: 'Questrial-Regular',
+        fontFamily: 'Inter-Regular',
+        lineHeight: 20,
     },
     inputContainer: {
-        marginBottom: 15,
+        marginBottom: 16,
     },
-    inputGradient: {
-        borderRadius: 80,
-        padding: 1,
+    inputWrapper: {
+        position: 'relative',
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#2D3748',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    inputIcon: {
+        marginLeft: 16,
+        marginRight: 8,
     },
     input: {
-        height: 50,
-        borderRadius: 80,
-        paddingHorizontal: 15,
-        fontSize: 16,
-        backgroundColor: '#000',
-        color: '#FFFFFF',
-        fontFamily: 'Questrial-Regular',
-    },
-    errorText: {
-        color: '#FF4D4F',
-        fontSize: 12,
-        marginTop: 5,
-        fontFamily: 'Questrial-Regular',
-    },
-    buttonGradient: {
-        borderRadius: 8,
-        padding: 1,
-        marginTop: 10,
-    },
-    button: {
+        flex: 1,
         height: 48,
-        borderRadius: 8,
+        fontSize: 16,
+        color: '#FFFFFF',
+        fontFamily: 'Inter-Regular',
+    },
+    inputWithIcon: {
+        paddingLeft: 0,
+        paddingRight: 48,
+    },
+    passwordInput: {
+        paddingRight: 48,
+    },
+    eyeIcon: {
+        position: 'absolute',
+        right: 16,
+        height: 48,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#000',
+    },
+    errorText: {
+        color: '#EF4444',
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 16,
+        fontFamily: 'Inter-Regular',
+    },
+    button: {
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    buttonGradient: {
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        alignItems: 'center',
     },
     buttonText: {
         color: '#FFFFFF',
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '600',
-        fontFamily: 'Questrial-Regular',
+        fontFamily: 'Inter-SemiBold',
+    },
+    registerContainer: {
+        marginTop: 16,
+        alignItems: 'center',
+    },
+    registerText: {
+        color: '#9CA3AF',
+        fontSize: 14,
+        fontFamily: 'Inter-Regular',
+    },
+    registerLink: {
+        color: '#10B981',
+        fontWeight: '600',
     },
 });

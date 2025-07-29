@@ -44,11 +44,11 @@ const HomeHeader = ({ page, title, action }) => {
             </TouchableOpacity>
 
             <View style={styles.searchBarContainer}>
-                {page === 'chatbot' ? (
+                {/* {page === 'chatbot' ? ( */}
                     <Text style={styles.title}>{title}</Text>
-                ) : (
+                {/* ) : (
                     <SearchBar />
-                )}
+                )} */}
             </View>
 
             {action === 'refresh' ? (
