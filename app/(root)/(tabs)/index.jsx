@@ -1,6 +1,5 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { StyleSheet, View,  ScrollView} from 'react-native';
 import HomeHeader from '@/components/HomeHeader';
-import { router } from 'expo-router';
 import IndexCard from '@/components/IndexCard';
 import MarketSentiments from '@/components/MarketSentiments';
 import RecentTrades from '@/components/RecentTrades';

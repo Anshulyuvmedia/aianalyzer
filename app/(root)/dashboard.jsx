@@ -12,12 +12,12 @@ const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
 
 const menuItems = [
-    { name: 'Algo Strategy Builder', route: 'algostrategybuilder', icon: 'cog' },
-    { name: 'Algo Dashboard', route: 'algodashboard', icon: 'chart-line' },
-    { name: 'FOX Strategy Builder', route: 'foxstrategybuilder', icon: 'rocket' },
-    { name: 'Detailed Metrics', route: 'detailedmatrics', icon: 'chart-bar' },
-    { name: 'Strategy Backtesting', route: 'strategybacktesting', icon: 'history' },
-    { name: 'AI Generated Trade', route: 'aigeneratedtrade', icon: 'robot' },
+    { name: 'Broker Connection', route: 'brokerconnection', icon: 'cog' },
+    { name: 'Reports', route: 'reports', icon: 'chart-line' },
+    // { name: 'FOX Strategy Builder', route: 'foxstrategybuilder', icon: 'rocket' },
+    // { name: 'Detailed Metrics', route: 'detailedmatrics', icon: 'chart-bar' },
+    // { name: 'Strategy Backtesting', route: 'strategybacktesting', icon: 'history' },
+    // { name: 'AI Generated Trade', route: 'aigeneratedtrade', icon: 'robot' },
 ];
 
 const MenuButton = ({ item, onPress, isLogout = false }) => {

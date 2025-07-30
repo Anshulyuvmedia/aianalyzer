@@ -65,10 +65,10 @@ const TabItem = ({ route, index, isFocused, options, navigation }) => {
   const getIconName = (routeName, focused) => {
     const iconMap = {
       index: focused ? 'home' : 'home-outline',
-      chatbot: focused ? 'chatbox-ellipses' : 'chatbox-ellipses-outline',
-      course: focused ? 'book' : 'book-outline',
-      algoscreens: focused ? 'hardware-chip-sharp' : 'hardware-chip-outline',
-      screener: focused ? 'search' : 'search-outline',
+      algotrading: focused ? 'search' : 'search-outline',
+      copytrading: focused ? 'hardware-chip-sharp' : 'hardware-chip-outline',
+      chartanalysis: focused ? 'book' : 'book-outline',
+      backtesting: focused ? 'chatbox-ellipses' : 'chatbox-ellipses-outline',
     };
     return iconMap[routeName] || 'circle';
   };
@@ -222,30 +222,30 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="chatbot"
+        name="algotrading"
         options={{
-          title: 'Chatbot',
+          title: 'Algo Trading',
           lazy: true,
         }}
       />
       <Tabs.Screen
-        name="course"
+        name="copytrading"
         options={{
-          title: 'Course',
+          title: 'Copy Trading',
           lazy: true,
         }}
       />
       <Tabs.Screen
-        name="algoscreens"
+        name="chartanalysis"
         options={{
-          title: 'Algo',
+          title: 'Chart Analysis',
           lazy: true,
         }}
       />
       <Tabs.Screen
-        name="screener"
+        name="backtesting"
         options={{
-          title: 'Screener',
+          title: 'Back Testing',
           lazy: true,
         }}
       />
