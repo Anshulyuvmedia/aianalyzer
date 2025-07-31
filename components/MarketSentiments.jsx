@@ -167,7 +167,7 @@ const MarketSentiments = () => {
                     </View>
                 </LinearGradient>
             </LinearGradient>
-        </View >
+        </View>
     );
 };
 

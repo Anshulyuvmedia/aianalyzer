@@ -65,10 +65,10 @@ const TabItem = ({ route, index, isFocused, options, navigation }) => {
   const getIconName = (routeName, focused) => {
     const iconMap = {
       index: focused ? 'home' : 'home-outline',
-      algotrading: focused ? 'search' : 'search-outline',
-      copytrading: focused ? 'hardware-chip-sharp' : 'hardware-chip-outline',
-      chartanalysis: focused ? 'book' : 'book-outline',
-      backtesting: focused ? 'chatbox-ellipses' : 'chatbox-ellipses-outline',
+      algotrading: focused ? 'hardware-chip-sharp' : 'hardware-chip-outline',
+      copytrading: focused ? 'copy' : 'copy-outline',
+      chartanalysis: focused ? 'stats-chart' : 'stats-chart-outline',
+      backtesting: focused ? 'git-compare' : 'git-compare-outline',
     };
     return iconMap[routeName] || 'circle';
   };
@@ -154,7 +154,7 @@ const Colors = {
   iconHover: '#99A3BA', // Not used in touch-based UI
   text: '#E4ECFA',
   circle: '#E4ECFA',
-  background: '#25242F',
+  background: '#000',
   shadow: 'rgba(18, 22, 33, 0.1)',
 };
 
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     backgroundColor: Colors.background,
-    height: 68,
+    height: 70,
     borderRadius: 0,
     // paddingHorizontal: 0,
     shadowColor: Colors.shadow,
@@ -217,7 +217,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Dashboard',
           lazy: true,
         }}
       />
