@@ -2,12 +2,16 @@ import { StyleSheet, View, FlatList, RefreshControl, Text } from 'react-native';
 import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import ReferralAccess from '@/components/ReferralAccess';
+import APIConfiguration from '@/components/APIConfiguration';
+import SupportedBrokers from '@/components/SupportedBrokers';
 
 const BrokerConnection = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     const components = [
         { id: '1', component: <ReferralAccess /> },
+        { id: '2', component: <APIConfiguration /> },
+        { id: '3', component: <SupportedBrokers /> },
 
     ];
     const renderItem = ({ item }) => (

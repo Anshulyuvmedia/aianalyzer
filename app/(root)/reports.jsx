@@ -1,13 +1,19 @@
 import { StyleSheet, View, FlatList, RefreshControl, Text } from 'react-native';
 import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
-import ReferralAccess from '@/components/ReferralAccess';
+import PerformanceReports from '@/components/PerformanceReports';
+import MonthlyPerformance from '@/components/MonthlyPerformance';
+import StrategyBreakdown from '@/components/StrategyBreakdown';
+import RiskAnalysis from '@/components/RiskAnalysis';
 
 const Report = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     const components = [
-        { id: '1', component: <ReferralAccess /> },
+        { id: '1', component: <PerformanceReports /> },
+        { id: '2', component: <MonthlyPerformance /> },
+        { id: '3', component: <StrategyBreakdown /> },
+        { id: '4', component: <RiskAnalysis /> },
 
     ];
     const renderItem = ({ item }) => (

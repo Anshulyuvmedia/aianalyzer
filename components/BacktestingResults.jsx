@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
 import React from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather, AntDesign } from '@expo/vector-icons';
@@ -42,7 +42,7 @@ const BacktestingResults = () => {
                 end={{ x: 1, y: 1 }}
                 style={styles.innerGradient}
             >
-                <ScrollView style={styles.container}>
+                <View style={styles.container}>
                     <View style={styles.content}>
                         <View style={styles.headerRow}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', width: '50%' }}>
@@ -105,7 +105,7 @@ const BacktestingResults = () => {
                             ))}
                         </View>
                     </View>
-                </ScrollView>
+                </View>
             </LinearGradient>
         </LinearGradient>
     );
