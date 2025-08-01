@@ -1,13 +1,17 @@
 import { StyleSheet, View, FlatList, RefreshControl, Text } from 'react-native';
 import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
-import ReferralAccess from '@/components/ReferralAccess';
+import SelectTradingPairs from '@/components/SelectTradingPairs';
+import OverallAnalysis from '@/components/OverallAnalysis';
+import AIMarketInsights from '@/components/AIMarketInsights';
 
 const ChartAnalysis = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     const components = [
-        { id: '1', component: <ReferralAccess /> },
+        { id: '1', component: <SelectTradingPairs /> },
+        { id: '2', component: <OverallAnalysis /> },
+        { id: '3', component: <AIMarketInsights /> },
 
     ];
     const renderItem = ({ item }) => (

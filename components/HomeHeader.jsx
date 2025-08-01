@@ -2,7 +2,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import React from 'react';
 import images from '@/constants/images';
 import LinearGradient from 'react-native-linear-gradient';
-import { FontAwesome, Feather } from '@expo/vector-icons';
+import { FontAwesome, Feather, Ionicons } from '@expo/vector-icons';
 import SearchBar from '@/components/SearchBar';
 import { useRouter, useNavigation } from 'expo-router'; // Import useNavigation
 
@@ -67,7 +67,7 @@ const HomeHeader = ({ page, title, action, subtitle }) => {
                         </LinearGradient>
                     </TouchableOpacity>
                 ) : (
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('notifications')}>
                         <LinearGradient
                             colors={['#444', '#AEAED4']}
                             start={{ x: 0, y: 0 }}
@@ -75,8 +75,7 @@ const HomeHeader = ({ page, title, action, subtitle }) => {
                             style={styles.gradientBorder}
                         >
                             <View style={styles.coinContainer}>
-                                <Image source={images.rupee} style={styles.coinImage} resizeMode="contain" />
-                                <Text style={styles.coinText}>400</Text>
+                                <Ionicons name="notifications-outline" size={24} color="white" />
                             </View>
                         </LinearGradient>
                     </TouchableOpacity>
