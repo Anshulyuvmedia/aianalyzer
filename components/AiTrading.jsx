@@ -2,9 +2,15 @@ import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import React from 'react';
 import { Feather, Octicons, MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
 import LinearGradient from 'react-native-linear-gradient';
-import { ProgressCircle } from 'react-native-svg-charts'; // Assuming a library for the circular progress
+import Svg, { Circle, Text as SvgText } from 'react-native-svg'; // Using react-native-svg for custom progress
 
 const AiTrading = () => {
+    const progress = 0.85; // 85% progress
+    const radius = 40;
+    const strokeWidth = 10;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (progress * circumference);
+
     return (
         <View style={styles.container}>
             <LinearGradient
@@ -19,8 +25,8 @@ const AiTrading = () => {
                     end={{ x: 1, y: 1 }}
                     style={styles.innerGradient}
                 >
-                    {/* Header Section */}
                     <View style={styles.cardContent}>
+                        {/* Header Section */}
                         <View style={styles.cardHeader}>
                             <View style={styles.headerLeft}>
                                 <MaterialCommunityIcons name="brain" size={24} color="#34C759" />
@@ -65,7 +71,6 @@ const AiTrading = () => {
                                     <FontAwesome name="line-chart" size={20} color="#22c55e" />
                                     <Text style={styles.sectionTitle}>Performance Snapshot</Text>
                                 </View>
-
                                 <View style={[styles.performanceItem, styles.performanceGreenItem]}>
                                     <Text style={[styles.performanceValue, styles.greenValue]}>72%</Text>
                                     <Text style={styles.performanceLabel}>Win Rate</Text>
@@ -84,18 +89,50 @@ const AiTrading = () => {
                                 <View style={styles.progressContainer}>
                                     <Text style={[styles.sectionTitle, styles.sentimentTitle]}>AI Sentiment</Text>
                                     <Text style={styles.sentimentText}>BULLISH</Text>
-                                    <ProgressCircle
-                                        style={styles.progressCircle}
-                                        progress={0.85}
-                                        progressColor="#22c55e"
-                                        backgroundColor="#2d3748"
-                                        strokeWidth={10}
-                                    // startAngle={-Math.PI * 0.8}
-                                    // endAngle={Math.PI * 0.8}
-                                    >
-                                        <Text style={styles.progressText}>85%</Text>
-                                        <Text style={styles.progressLabel}>Confidence</Text>
-                                    </ProgressCircle>
+                                    <Svg height="120" width="120">
+                                        <Circle
+                                            cx="60"
+                                            cy="60"
+                                            r={radius}
+                                            stroke="#2d3748"
+                                            strokeWidth={strokeWidth}
+                                            fill="none"
+                                        />
+                                        <Circle
+                                            cx="60"
+                                            cy="60"
+                                            r={radius}
+                                            stroke="#22c55e"
+                                            strokeWidth={strokeWidth}
+                                            fill="none"
+                                            strokeDasharray={circumference}
+                                            strokeDashoffset={strokeDashoffset}
+                                            rotation="-90"
+                                            originX="60"
+                                            originY="60"
+                                        />
+                                        <SvgText
+                                            x="60"
+                                            y="60"
+                                            textAnchor="middle"
+                                            fontSize="18"
+                                            fontWeight="600"
+                                            fill="#22c55e"
+                                            dy=".3em"
+                                        >
+                                            {`${Math.round(progress * 100)}%`}
+                                        </SvgText>
+                                        <SvgText
+                                            x="60"
+                                            y="70"
+                                            textAnchor="middle"
+                                            fontSize="12"
+                                            fill="#9CA3AF"
+                                            dy=".3em"
+                                        >
+                                            Confidence
+                                        </SvgText>
+                                    </Svg>
                                 </View>
                             </View>
                         </View>
@@ -111,13 +148,14 @@ const AiTrading = () => {
                                 <Text style={styles.buttonText}>Active AI Bot</Text>
                             </TouchableOpacity>
                         </View>
-                        
                     </View>
                 </LinearGradient>
             </LinearGradient>
         </View>
     );
 };
+
+export default AiTrading;
 
 const styles = StyleSheet.create({
     container: {
@@ -154,7 +192,6 @@ const styles = StyleSheet.create({
     },
     headerRight: {
         alignItems: 'flex-end',
-        // width: '25%',
     },
     activeBadge: {
         flexDirection: 'row',
@@ -184,8 +221,6 @@ const styles = StyleSheet.create({
     infoSection: {
         marginBottom: 15,
         padding: 10,
-        border: 1,
-        borderColor: '#1e2836',
         backgroundColor: '#1e2836',
         borderRadius: 10,
     },
@@ -272,28 +307,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginVertical: 'auto',
     },
-    progressCircle: {
-        height: 100,
-        width: 100,
-    },
     progressText: {
         color: '#22c55e',
         fontSize: 18,
         fontWeight: '600',
         textAlign: 'center',
-        position: 'absolute',
-        top: 50,
-        left: 5,
-        right: 0,
     },
     progressLabel: {
         color: '#9CA3AF',
         fontSize: 12,
         textAlign: 'center',
-        position: 'absolute',
-        top: 35,
-        left: 0,
-        right: 0,
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -324,5 +347,3 @@ const styles = StyleSheet.create({
         marginLeft: 5,
     },
 });
-
-export default AiTrading;
