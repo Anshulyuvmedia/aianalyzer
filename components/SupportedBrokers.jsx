@@ -2,17 +2,10 @@ import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import React from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather, Octicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 const SupportedBrokers = () => {
     const brokers = [
-        {
-            icon: 'zap',
-            name: 'Exness',
-            description: 'Ready for auto-trading',
-            commission: '0%',
-            status: 'Connected',
-            connected: true,
-        },
         {
             icon: 'box',
             name: 'Delta Exchange',
@@ -20,43 +13,11 @@ const SupportedBrokers = () => {
             commission: '0.005%',
             status: 'Connect',
             connected: false,
-        },
-        {
-            icon: 'globe',
-            name: 'Coindex',
-            description: 'Multi-asset trading platform',
-            commission: '0%',
-            status: 'Connect',
-            connected: false,
-        },
-        {
-            icon: 'disc',
-            name: 'Charles Schwab',
-            description: 'Traditional brokerage',
-            commission: '0%',
-            status: 'Connect',
-            connected: false,
-        },
-        {
-            icon: 'bar-chart-2',
-            name: 'Fidelity',
-            description: 'Investment services',
-            commission: '0%',
-            status: 'Connect',
-            connected: false,
-        },
-        {
-            icon: 'arrow-up-circle',
-            name: 'Robinhood',
-            description: 'Commission-free trading',
-            commission: '0%',
-            status: 'Coming Soon',
-            connected: false,
-        },
+        }
     ];
 
     const handleConnect = (brokerName) => {
-        // Add connect logic here
+        router.push('/brokerapiconnect');
         console.log(`Connecting to ${brokerName}`);
     };
 

@@ -10,7 +10,7 @@ const BrokerConnection = () => {
 
     const components = [
         { id: '1', component: <ReferralAccess /> },
-        { id: '2', component: <APIConfiguration /> },
+        // { id: '2', component: <APIConfiguration /> },
         { id: '3', component: <SupportedBrokers /> },
 
     ];
