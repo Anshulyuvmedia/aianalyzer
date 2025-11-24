@@ -1,11 +1,11 @@
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import React from 'react';
-import { Feather, Octicons, MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
+import { Feather, FontAwesome, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import Svg, { Circle, Text as SvgText } from 'react-native-svg'; // Using react-native-svg for custom progress
+import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 
-const AiTrading = () => {
-    const progress = 0.85; // 85% progress
+const AiTrading = ({ data }) => {
+
+    const progress = data?.confidence / 100;
     const radius = 40;
     const strokeWidth = 10;
     const circumference = 2 * Math.PI * radius;
@@ -26,19 +26,23 @@ const AiTrading = () => {
                     style={styles.innerGradient}
                 >
                     <View style={styles.cardContent}>
-                        {/* Header Section */}
+
+                        {/* Header */}
                         <View style={styles.cardHeader}>
                             <View style={styles.headerLeft}>
                                 <MaterialCommunityIcons name="brain" size={24} color="#34C759" />
                                 <View style={styles.headerText}>
                                     <Text style={styles.cardChange}>AI Trading</Text>
-                                    <Text style={styles.subText}>Automated decision-making powered by AI models</Text>
+                                    <Text style={styles.subText}>
+                                        Automated decision-making powered by AI models
+                                    </Text>
                                 </View>
                             </View>
+
                             <View style={styles.headerRight}>
                                 <View style={styles.activeBadge}>
                                     <Feather name="check-circle" size={18} color="#22c55e" />
-                                    <Text style={styles.activeText}>Active</Text>
+                                    <Text style={styles.activeText}>{data?.status}</Text>
                                     <Octicons name="dot-fill" size={18} color="#22c55e" />
                                 </View>
                             </View>
@@ -50,45 +54,63 @@ const AiTrading = () => {
                                 <MaterialCommunityIcons name="robot-excited-outline" size={24} color="#5897e5" />
                                 <Text style={styles.sectionTitle}>Strategy Information</Text>
                             </View>
+
                             <View style={styles.infoRow}>
                                 <Text style={styles.infoLabel}>Model Name:</Text>
-                                <Text style={styles.infoValue}>AI Scalper X1</Text>
+                                <Text style={styles.infoValue}>{data?.modelName}</Text>
                             </View>
+
                             <View style={styles.infoRow}>
                                 <Text style={styles.infoLabel}>Timeframe:</Text>
-                                <Text style={styles.infoValue}>5min</Text>
+                                <Text style={styles.infoValue}>{data?.timeframe}</Text>
                             </View>
+
                             <View style={styles.infoRow}>
                                 <Text style={styles.infoLabel}>Market:</Text>
-                                <Text style={styles.infoValue}>BTCUSD</Text>
+                                <Text style={styles.infoValue}>{data?.market}</Text>
                             </View>
                         </View>
 
-                        {/* Performance Snapshot and AI Sentiment */}
+                        {/* Performance + Sentiment */}
                         <View style={styles.performanceSection}>
+
                             <View style={styles.performanceLeft}>
                                 <View style={styles.header}>
                                     <FontAwesome name="line-chart" size={20} color="#22c55e" />
                                     <Text style={styles.sectionTitle}>Performance Snapshot</Text>
                                 </View>
+
                                 <View style={[styles.performanceItem, styles.performanceGreenItem]}>
-                                    <Text style={[styles.performanceValue, styles.greenValue]}>72%</Text>
+                                    <Text style={[styles.performanceValue, styles.greenValue]}>
+                                        {data?.winRate}%
+                                    </Text>
                                     <Text style={styles.performanceLabel}>Win Rate</Text>
                                 </View>
+
                                 <View style={[styles.performanceItem, styles.performanceBlueItem]}>
-                                    <Text style={[styles.performanceValue, styles.blueValue]}>+18.4%</Text>
+                                    <Text style={[styles.performanceValue, styles.blueValue]}>
+                                        +{data?.roi}%
+                                    </Text>
                                     <Text style={styles.performanceLabel}>ROI</Text>
                                 </View>
+
                                 <View style={[styles.performanceItem, styles.performancePurpleItem]}>
-                                    <Text style={[styles.performanceValue, styles.purpleValue]}>132</Text>
+                                    <Text style={[styles.performanceValue, styles.purpleValue]}>
+                                        {data?.tradesExecuted}
+                                    </Text>
                                     <Text style={styles.performanceLabel}>Trades Executed</Text>
                                 </View>
                             </View>
 
+                            {/* Sentiment */}
                             <View style={styles.sentimentSection}>
                                 <View style={styles.progressContainer}>
                                     <Text style={[styles.sectionTitle, styles.sentimentTitle]}>AI Sentiment</Text>
-                                    <Text style={styles.sentimentText}>BULLISH</Text>
+
+                                    <Text style={styles.sentimentText}>
+                                        {data?.sentiment}
+                                    </Text>
+
                                     <Svg height="120" width="120">
                                         <Circle
                                             cx="60"
@@ -98,6 +120,7 @@ const AiTrading = () => {
                                             strokeWidth={strokeWidth}
                                             fill="none"
                                         />
+
                                         <Circle
                                             cx="60"
                                             cy="60"
@@ -111,6 +134,7 @@ const AiTrading = () => {
                                             originX="60"
                                             originY="60"
                                         />
+
                                         <SvgText
                                             x="60"
                                             y="60"
@@ -122,6 +146,7 @@ const AiTrading = () => {
                                         >
                                             {`${Math.round(progress * 100)}%`}
                                         </SvgText>
+
                                         <SvgText
                                             x="60"
                                             y="70"
@@ -137,17 +162,19 @@ const AiTrading = () => {
                             </View>
                         </View>
 
-                        {/* Action Buttons */}
+                        {/* Buttons */}
                         <View style={styles.buttonContainer}>
                             <TouchableOpacity style={styles.detailsButton}>
                                 <Octicons name="book" size={18} color="#FFFFFF" />
                                 <Text style={styles.buttonText}>View Strategy Details</Text>
                             </TouchableOpacity>
+
                             <TouchableOpacity style={styles.activeBotButton}>
                                 <MaterialCommunityIcons name="rocket" size={18} color="#FFFFFF" />
                                 <Text style={styles.buttonText}>Active AI Bot</Text>
                             </TouchableOpacity>
                         </View>
+
                     </View>
                 </LinearGradient>
             </LinearGradient>
@@ -156,6 +183,7 @@ const AiTrading = () => {
 };
 
 export default AiTrading;
+
 
 const styles = StyleSheet.create({
     container: {

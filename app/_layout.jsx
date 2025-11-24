@@ -8,6 +8,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import './globals.css'
+import { ConnectionProvider } from "./context/ConnectionContext";
 
 // Prevent the splash screen from hiding until fonts are loaded
 SplashScreen.preventAutoHideAsync();
@@ -64,30 +65,32 @@ function SafeAreaViewWrapper({ statusBarColor }) {
             }}
             edges={['top', 'left', 'right']} // Exclude bottom edge to manually handle insets.bottom
         >
-            {/* View to simulate the status bar background */}
-            <View
-                style={{
-                    height: insets.top,
-                    backgroundColor: statusBarColor,
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                }}
-            />
-            <StatusBar style="light" />
-            <Stack
-                screenOptions={{
-                    headerShown: false,
-                    contentStyle: {
-                        backgroundColor: '#000',
-                        paddingBottom: insets.bottom, // Ensure Stack content respects bottom inset
-                    },
-                }}
-            >
-                <Stack.Screen name="(root)" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            </Stack>
+            <ConnectionProvider>
+                {/* View to simulate the status bar background */}
+                <View
+                    style={{
+                        height: insets.top,
+                        backgroundColor: statusBarColor,
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                    }}
+                />
+                <StatusBar style="light" />
+                <Stack
+                    screenOptions={{
+                        headerShown: false,
+                        contentStyle: {
+                            backgroundColor: '#000',
+                            paddingBottom: insets.bottom, // Ensure Stack content respects bottom inset
+                        },
+                    }}
+                >
+                    <Stack.Screen name="(root)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                </Stack>
+            </ConnectionProvider>
         </SafeAreaView>
     );
 }

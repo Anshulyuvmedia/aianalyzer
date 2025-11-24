@@ -1,28 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native';
-import React from 'react';
 import { Octicons } from '@expo/vector-icons';
+import { StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 
-const ActiveAlerts = () => {
-    const trades = [
-        {
-            name: 'Pattern Alert',
-            info: 'Double Bottom detected on BTC/USD 4H',
-            time: '5m ago',
-        },
-        {
-            name: 'Indicator Alert',
-            info: 'RSI oversold on ETH/USD 1H',
-            time: '12m ago',
-        },
-        {
-            name: 'Copy Trade',
-            info: 'New position opened by @CryptoKing',
-            time: '18m ago',
-        },
-    ];
-
+const ActiveAlerts = ({ data }) => {
+    const activeAlerts = data?.activeAlerts || [];
+    // console.log("Active Alerts:", JSON.stringify(activeAlerts, null, 3));
     return (
         <LinearGradient
             colors={['#AEAED4', '#000', '#AEAED4']}
@@ -41,17 +24,17 @@ const ActiveAlerts = () => {
                         <Octicons name="stop" size={24} color="gold" />
                         <Text style={styles.header}>Active Alerts</Text>
                     </View>
-                    {trades.map((trade, index) => (
+                    {activeAlerts.map((trade, index) => (
                         <View key={index} style={styles.tradeItem}>
                             <View style={styles.tradeInfo}>
-                                <Text style={styles.name}>{trade.name}</Text>
+                                <Text style={styles.name}>{trade.message}</Text>
                                 <Text style={styles.tradeDetails}>
-                                    {trade.info} • {trade.timeAgo}
+                                    {trade.type} • {trade.timeAgo}
                                 </Text>
                             </View>
                             <View style={styles.priceContainer}>
                                 <Text style={styles.change}>
-                                    {trade.time}
+                                    {trade.timeAgo}
                                 </Text>
                             </View>
                         </View>

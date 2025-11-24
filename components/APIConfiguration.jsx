@@ -1,25 +1,50 @@
-import { StyleSheet, Text, View, TouchableOpacity, TextInput } from 'react-native';
-import React, { useState } from 'react';
+import { Feather } from '@expo/vector-icons';
+import axios from "axios";
+import { useContext, useState } from 'react';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { ConnectionContext } from "../app/context/ConnectionContext";
 
-const APIConfiguration = () => {
-    const [apiKey, setApiKey] = useState('xai-api-key-1234567890');
-    const [apiSecret, setApiSecret] = useState('');
+const APIConfiguration = ({ apiType }) => {
+    const { connectionStatus, setConnectionStatus } = useContext(ConnectionContext);
+    const [apiKey, setApiKey] = useState('k6pfIbVSZL24lGUXnW6supQVnYbbzX');
+    const [apiSecret, setApiSecret] = useState('OWsTgCzcAPDxzvZJhWwcgiGmh1zVjehtwKfqaaM6C5uiBQDGDzvIPpnaXeAy');
     const [showApiKey, setShowApiKey] = useState(false);
     const [showApiSecret, setShowApiSecret] = useState(false);
-    const [environment, setEnvironment] = useState('Paper Trading');
     const [statusMessage, setStatusMessage] = useState('');
 
     const handleToggleApiKey = () => setShowApiKey(!showApiKey);
     const handleToggleApiSecret = () => setShowApiSecret(!showApiSecret);
 
-    const handleTestConnection = () => {
-        if (apiKey && apiSecret) {
-            setStatusMessage('API connection tested successfully');
-            console.log('Testing connection with API Key:', apiKey, 'API Secret:', apiSecret);
-        } else {
-            setStatusMessage('Please enter both API Key and API Secret');
+    const handleTestConnection = async () => {
+        if (!apiKey || !apiSecret) {
+            Alert.alert("Error", 'Please enter both API Key and API Secret');
+            return;
+        }
+        try {
+            const response = await axios.post("http://192.168.1.27:3000/api/connect-api", {
+                userId: "6913004ff1e7fdb301229171",
+                apiType: apiType,
+                apiKey: apiKey,
+                apiSecret: apiSecret,
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+
+            const data = response.data;
+            console.log("Broker Response:", data);
+
+            if (data?.connection_status === true) {
+                setConnectionStatus(true);
+            } else {
+                setConnectionStatus(false);
+            }
+
+        } catch (error) {
+            console.error("Error connecting:", error);
+            setStatusMessage("Something went wrong. Try again ❌");
         }
     };
 
@@ -89,41 +114,6 @@ const APIConfiguration = () => {
                                 </TouchableOpacity>
                             </View>
                         </View>
-                        <View style={styles.inputSection}>
-                            <Text style={styles.inputLabel}>Environment</Text>
-                            <View style={styles.radioContainer}>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.radioButton,
-                                        environment === 'Paper Trading' && styles.selectedRadio,
-                                    ]}
-                                    onPress={() => setEnvironment('Paper Trading')}
-                                >
-                                    <View style={styles.radioCircle}>
-                                        {environment === 'Paper Trading' && <View style={styles.radioInner} />}
-                                    </View>
-                                    <Text style={styles.radioText}>Paper Trading</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.radioButton,
-                                        environment === 'Live Trading' && styles.selectedRadio,
-                                    ]}
-                                    onPress={() => setEnvironment('Live Trading')}
-                                >
-                                    <View style={styles.radioCircle}>
-                                        {environment === 'Live Trading' && <View style={styles.radioInner} />}
-                                    </View>
-                                    <Text style={styles.radioText}>Live Trading</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        <View style={styles.warningSection}>
-                            <Ionicons name="warning-outline" size={20} color="#facc15" />
-                            <Text style={styles.warningText}>
-                                Always test with paper trading before enabling live trading. Ensure your API keys have appropriate permissions.
-                            </Text>
-                        </View>
                         <TouchableOpacity style={styles.saveButton} onPress={handleTestConnection}>
                             <Text style={styles.saveText}>Test Connection</Text>
                         </TouchableOpacity>
@@ -138,7 +128,8 @@ export default APIConfiguration;
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        // flex: 1,
+        backgroundColor: 'black',
     },
     content: {
         // padding: 20,

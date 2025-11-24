@@ -1,18 +1,24 @@
-import { StyleSheet, View, FlatList, RefreshControl, Text } from 'react-native';
-import React, { useState } from 'react';
+import ActiveStrategies from '@/components/ActiveStrategies';
+import AiTrading from '@/components/AiTrading';
 import HomeHeader from '@/components/HomeHeader';
 import IndexCard from '@/components/IndexCard';
-import AiTrading from '@/components/AiTrading';
-import ActiveStrategies from '@/components/ActiveStrategies';
 import RecentTrades from '@/components/RecentTrades';
-
+import { useContext, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { ConnectionContext } from "../../context/ConnectionContext";
 const AlgoTrading = () => {
+    const { dashboardData, loadingDashboard, loadingAlgotrading, algotradingData } = useContext(ConnectionContext);
+    const recentTrades = dashboardData?.recentTrades;
+    const summary = algotradingData?.summary;
+    const aitrading = algotradingData?.aiTrading;
+    const activeStrategies = algotradingData?.activeStrategies;
+
     const [data] = useState({
         dashboardMetrics: [
             {
                 id: 'total-portfolio',
                 label: 'Total P&L',
-                value: '$4,583.60',
+                value: summary?.totalPL,
                 changeColor: '#34C759',
                 iconColor: '#4ade80',
                 icon: 'dollar',
@@ -20,7 +26,7 @@ const AlgoTrading = () => {
             {
                 id: 'active-strategies',
                 label: 'Avg Win Rate',
-                value: '74.5%',
+                value: summary?.avgWinRate,
                 iconColor: '#60a5fa',
                 changeColor: '#34C759',
                 icon: 'line-chart',
@@ -28,7 +34,7 @@ const AlgoTrading = () => {
             {
                 id: 'win-rate',
                 label: 'Total Trades',
-                value: '172',
+                value: summary?.totalTrades,
                 iconColor: '#facc15',
                 changeColor: '#34C759',
                 icon: 'activity',
@@ -36,7 +42,7 @@ const AlgoTrading = () => {
             {
                 id: 'max-drawdown',
                 label: 'Active Strategies',
-                value: '3',
+                value: summary?.activeStrategies,
                 iconColor: '#c084fc',
                 changeColor: '#FF3B15',
                 icon: 'play',
@@ -48,9 +54,9 @@ const AlgoTrading = () => {
 
     const components = [
         { id: '1', component: <IndexCard data={data} page="algo" /> },
-        { id: '2', component: <AiTrading /> },
-        { id: '3', component: <ActiveStrategies /> },
-        { id: '4', component: <RecentTrades /> },
+        { id: '2', component: <AiTrading data={aitrading} /> },
+        { id: '3', component: <ActiveStrategies data={activeStrategies} /> },
+        { id: '4', component: <RecentTrades data={{ recentTrades }} /> },
     ];
 
     const renderItem = ({ item }) => (

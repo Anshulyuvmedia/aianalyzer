@@ -2,12 +2,15 @@
 //अनन्त और आकाश-समान अटूट परिणामों की परीक्षा ही जीवन का रास्ता है
 import images from '@/constants/images';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from "axios";
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import RBSheet from "react-native-raw-bottom-sheet";
+
+
 const Login = () => {
     const [apiData, setapiData] = useState('');
     const [phoneNumber, setphoneNumber] = useState("");
@@ -156,6 +159,15 @@ const Login = () => {
             setLoadingVerify(false); // stop loading
 
             if (res.data.status === true) {
+
+                // 👉 Save user data to AsyncStorage
+                await AsyncStorage.setItem(
+                    'userData',
+                    JSON.stringify(res.data.userdata)
+                );
+                console.log("User saved into AsyncStorage");
+
+
                 setapiData(res.data.userdata);
                 otpSheetRef.current.close();
                 console.log("Redirecting to......../(root)/(tabs)");

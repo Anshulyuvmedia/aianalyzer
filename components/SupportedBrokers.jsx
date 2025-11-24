@@ -1,10 +1,14 @@
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import React from 'react';
-import LinearGradient from 'react-native-linear-gradient';
-import { Feather, Octicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import { useContext } from "react";
+import { ConnectionContext } from "../app/context/ConnectionContext";
+
 
 const SupportedBrokers = () => {
+    const { connectionStatus } = useContext(ConnectionContext);
+    console.log("Broker connection:", connectionStatus);
     const brokers = [
         {
             icon: 'box',
@@ -12,13 +16,14 @@ const SupportedBrokers = () => {
             description: 'Crypto derivatives trading',
             commission: '0.005%',
             status: 'Connect',
-            connected: false,
+            connected: connectionStatus,
+            apiType: 'DELTA_EXCHANGE',
         }
     ];
 
-    const handleConnect = (brokerName) => {
-        router.push('/brokerapiconnect');
-        console.log(`Connecting to ${brokerName}`);
+    const handleConnect = (apiType) => {
+        router.push({ pathname: '/brokerapiconnect', params: { apiType } });
+        console.log(`Connecting to ${apiType}`);
     };
 
     return (
@@ -69,7 +74,7 @@ const SupportedBrokers = () => {
                                     ) : (
                                         <TouchableOpacity
                                             style={styles.connectButton}
-                                            onPress={() => handleConnect(broker.name)}
+                                            onPress={() => handleConnect(broker.apiType)}
                                         >
                                             <Text style={styles.connectText}>{broker.status}</Text>
                                         </TouchableOpacity>
@@ -82,7 +87,6 @@ const SupportedBrokers = () => {
                                     </View>
                                 )}
                             </View>
-
                         ))}
                     </View>
                 </View>
