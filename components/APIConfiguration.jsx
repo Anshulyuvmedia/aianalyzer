@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useContext, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -17,13 +18,19 @@ const APIConfiguration = ({ apiType }) => {
     const handleToggleApiSecret = () => setShowApiSecret(!showApiSecret);
 
     const handleTestConnection = async () => {
+
+        //Getting ID from Local storage as user is already logged in
+        const savedUser = await AsyncStorage.getItem("userData");
+        const { _id } = JSON.parse(savedUser);
+        console.log("User ID:", _id);
+
         if (!apiKey || !apiSecret) {
             Alert.alert("Error", 'Please enter both API Key and API Secret');
             return;
         }
         try {
             const response = await axios.post("http://192.168.1.27:3000/api/connect-api", {
-                userId: "6913004ff1e7fdb301229171",
+                userId: _id,
                 apiType: apiType,
                 apiKey: apiKey,
                 apiSecret: apiSecret,

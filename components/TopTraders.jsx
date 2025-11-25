@@ -1,51 +1,16 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
+import { Feather, MaterialCommunityIcons, SimpleLineIcons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { MaterialCommunityIcons, Feather, SimpleLineIcons } from '@expo/vector-icons';
 
-const TopTraders = () => {
-    const [traders, setTraders] = useState([
-        {
-            rank: 1,
-            name: 'CryptoKing',
-            successRate: '84.2%',
-            avgTime: '2.5h',
-            monthlyReturn: '+23.4%',
-            isFollowing: true,
-            rating: '4.8',
-            followers: '2340',
-        },
-        {
-            rank: 2,
-            name: 'TradeMaster',
-            successRate: '78.9%',
-            avgTime: '4.1h',
-            monthlyReturn: '+18.7%',
-            isFollowing: false,
-            rating: '4.6',
-            followers: '1890',
-        },
-        {
-            rank: 3,
-            name: 'AlgoExpert',
-            successRate: '91.3%',
-            avgTime: '1.8h',
-            monthlyReturn: '+31.2%',
-            isFollowing: true,
-            rating: '4.9',
-            followers: '3120',
-        },
-        {
-            rank: 4,
-            name: 'SwingPro',
-            successRate: '76.1%',
-            avgTime: '8.5h',
-            monthlyReturn: '+15.8%',
-            isFollowing: false,
-            rating: '4.3',
-            followers: '1450',
-        },
-    ]);
+const TopTraders = ({ toptradersdata }) => {
+    const [toptraders, setTopTraders] = useState([]);
+
+    useEffect(() => {
+        if (toptradersdata) {
+            setTopTraders(toptradersdata);
+        }
+    }, [toptradersdata]);
 
     const toggleFollow = (index) => {
         setTraders(prevTraders => {
@@ -100,13 +65,13 @@ const TopTraders = () => {
                 </View>
                 <View style={styles.traderMetrics}>
                     <View style={styles.metricItem}>
-                        <Text style={[styles.metricValue, { color: item.successRate.startsWith('-') ? '#FF3B15' : '#34C759' }]}>
+                        <Text style={[styles.metricValue, { color: String(item.successRate).startsWith('-') ? '#FF3B15' : '#34C759' }]}>
                             {item.successRate}
                         </Text>
                         <Text style={styles.metricLabel}>Success Rate</Text>
                     </View>
                     <View style={styles.metricItem}>
-                        <Text style={styles.metricValue}>{item.avgTime}</Text>
+                        <Text style={styles.metricValue}>{item.avgDuration}</Text>
                         <Text style={styles.metricLabel}>Avg Duration</Text>
                     </View>
                     <View style={styles.metricItem}>
@@ -140,7 +105,7 @@ const TopTraders = () => {
                             <Text style={styles.headerText}>Top Traders</Text>
                         </View>
                         <FlatList
-                            data={traders}
+                            data={toptraders}
                             renderItem={renderTraderItem}
                             keyExtractor={(item, index) => index.toString()}
                             showsVerticalScrollIndicator={false}

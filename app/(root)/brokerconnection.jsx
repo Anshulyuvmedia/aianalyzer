@@ -1,9 +1,8 @@
-import { StyleSheet, View, FlatList, RefreshControl, Text } from 'react-native';
-import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import ReferralAccess from '@/components/ReferralAccess';
-import APIConfiguration from '@/components/APIConfiguration';
 import SupportedBrokers from '@/components/SupportedBrokers';
+import { useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 const BrokerConnection = () => {
     const [refreshing, setRefreshing] = useState(false);

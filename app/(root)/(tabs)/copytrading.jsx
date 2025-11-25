@@ -1,18 +1,23 @@
-import { StyleSheet, View, FlatList, RefreshControl, Text } from 'react-native';
-import React, { useState } from 'react';
-import HomeHeader from '@/components/HomeHeader';
-import IndexCard from '@/components/IndexCard';
-import TopTraders from '@/components/TopTraders';
-import RecentCopyTrades from '@/components/RecentCopyTrades';
 import CopyTradingPerformance from '@/components/CopyTradingPerformance';
+import HomeHeader from '@/components/HomeHeader';
+import RecentCopyTrades from '@/components/RecentCopyTrades';
+import TopTraders from '@/components/TopTraders';
+import { useContext, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { ConnectionContext } from "../../context/ConnectionContext";
+
 
 const CopyTrading = () => {
+    const { copytradingData } = useContext(ConnectionContext);
+    const copystats = copytradingData?.copystats;
+    const topTraders = copytradingData?.topTraders;
+    const recentCopyTrades = copytradingData?.recentCopyTrades;
     const [data] = useState({
         dashboardMetrics: [
             {
                 id: 'total-portfolio',
                 label: 'Copy Trading P&L',
-                value: '$2,847.90',
+                value: copystats?.copyTradingPnL,
                 changeColor: '#34C759',
                 iconColor: '#4ade80',
                 icon: 'line-chart',
@@ -20,7 +25,7 @@ const CopyTrading = () => {
             {
                 id: 'active-strategies',
                 label: 'Followed Traders',
-                value: '2',
+                value: copystats?.followedTraders,
                 changeColor: '#34C759',
                 iconColor: '#60a5fa',
                 icon: 'users',
@@ -28,7 +33,7 @@ const CopyTrading = () => {
             {
                 id: 'win-rate',
                 label: 'Success Rate',
-                value: '81.5%',
+                value: copystats?.successRate,
                 changeColor: '#34C759',
                 iconColor: '#facc15',
                 icon: 'trophy',
@@ -36,7 +41,7 @@ const CopyTrading = () => {
             {
                 id: 'max-drawdown',
                 label: 'Copied Trades',
-                value: '47',
+                value: copystats?.copiedTrades,
                 changeColor: '#FF3B15',
                 iconColor: '#c084fc',
                 icon: 'activity',
@@ -47,11 +52,10 @@ const CopyTrading = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     const components = [
-        { id: '1', component: <IndexCard data={data} page="algo" /> },
-        { id: '2', component: <TopTraders /> },
-        { id: '3', component: <RecentCopyTrades /> },
+        // { id: '1', component: <IndexCard data={data} page="algo" /> },
+        { id: '2', component: <TopTraders toptradersdata={topTraders} /> },
+        { id: '3', component: <RecentCopyTrades recentCopyTrades={recentCopyTrades} /> },
         { id: '4', component: <CopyTradingPerformance /> },
-
     ];
 
     const renderItem = ({ item }) => (

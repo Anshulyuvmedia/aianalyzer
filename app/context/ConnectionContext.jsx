@@ -8,6 +8,8 @@ export const ConnectionProvider = ({ children }) => {
   const [connectionStatus, setConnectionStatus] = useState(false); // default false
   const [dashboardData, setDashboardData] = useState(null);
   const [algotradingData, setAlgotradingData] = useState(null);
+  const [copytradingData, setCopytradingData] = useState(null);
+  const [loadingCopytrading, setLoadingCopytrading] = useState(true);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [loadingAlgotrading, setLoadingAlgotrading] = useState(true);
 
@@ -74,10 +76,43 @@ export const ConnectionProvider = ({ children }) => {
       setLoadingAlgotrading(false);
     }
   };
+  const FetchCopyTradingData = async () => {
+    try {
+      const savedUser = await AsyncStorage.getItem("userData");
+      if (!savedUser) return;
+
+      const { _id } = JSON.parse(savedUser);
+
+      const response = await axios.get(
+        `${BASE_URL}/copytrading-data?userid=${_id}`
+      );
+      // console.log("Copytrading fetch failed:", response.data);
+
+      // Save in global context
+      setCopytradingData(response.data);
+
+      // Save in local cache
+      await AsyncStorage.setItem("copytradingCache", JSON.stringify(response.data));
+
+
+      setLoadingCopytrading(false);
+    } catch (error) {
+      console.log("Copytrading fetch failed:", error);
+
+      // 🟡 Fallback to saved cache
+      const cache = await AsyncStorage.getItem("copytradingCache");
+      if (cache) {
+        setCopytradingData(JSON.parse(cache));
+      }
+
+      setLoadingCopytrading(false);
+    }
+  };
 
   useEffect(() => {
     fetchDashboardData();
     fetchAlogtradingData();
+    FetchCopyTradingData();
     // Auto-refresh every 5 minutes
     // const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     // return () => clearInterval(interval);
@@ -85,7 +120,7 @@ export const ConnectionProvider = ({ children }) => {
 
   return (
     <ConnectionContext.Provider value={
-      { connectionStatus, setConnectionStatus, dashboardData, loadingDashboard, algotradingData, loadingAlgotrading }
+      { connectionStatus, setConnectionStatus, dashboardData, loadingDashboard, algotradingData, loadingAlgotrading, copytradingData, loadingCopytrading }
     }>
       {children}
     </ConnectionContext.Provider>
