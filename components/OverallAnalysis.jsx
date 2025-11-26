@@ -1,59 +1,52 @@
-import { StyleSheet, Text, View, FlatList } from 'react-native';
-import React from 'react';
+import { Feather, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { Feather, Octicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
-const OverallAnalysis = () => {
-    const analysisData = [
-        {
-            pair: 'BTC/USD',
-            timeframe: '4H',
-            pattern: { name: 'Double Bottom', status: '✅ Bullish', confidence: '89%' },
-            indicator: { name: 'RSI', value: '67.4', status: '🟡 Neutral' },
-            smc: { name: 'Order Block', status: '✅ Bullish', price: '$42,850', strength: 'High' },
+const OverallAnalysis = ({ data }) => {
+    // Transform API data to match the structure your FlatList expects
+    const analysisData = data?.analysisData?.analysisData?.overallAnalysis?.map(item => ({
+        pair: item.pair,
+        timeframe: item.timeframe,
+        pattern: {
+            name: item.analysis.patternRecognition.pattern,
+            status:
+                item.analysis.patternRecognition.bias === "Bullish"
+                    ? "✅ Bullish"
+                    : item.analysis.patternRecognition.bias === "Bearish"
+                        ? "❌ Bearish"
+                        : "🟡 Neutral",
+            confidence: item.analysis.patternRecognition.confidence + "%"
         },
-        {
-            pair: 'ETH/USD',
-            timeframe: '1H',
-            pattern: { name: 'Head & Shoulders', status: '❌ Bearish', confidence: '76%' },
-            indicator: { name: 'MACD', value: '0.024', status: '✅ Bullish' },
-            smc: { name: 'Fair Value Gap', status: '❌ Bearish', price: '$41,200', strength: 'Medium' },
+        indicator: {
+            name: item.analysis.technicalIndicators.indicator,
+            value: item.analysis.technicalIndicators.value,
+            status:
+                item.analysis.technicalIndicators.bias === "Bullish"
+                    ? "✅ Bullish"
+                    : item.analysis.technicalIndicators.bias === "Bearish"
+                        ? "❌ Bearish"
+                        : "🟡 Neutral"
         },
-        {
-            pair: 'SOL/USD',
-            timeframe: '15M',
-            pattern: { name: 'Bull Flag', status: '✅ Bullish', confidence: '92%' },
-            indicator: { name: 'ADX', value: '34.2', status: '🔵 Strong Trend' },
-            smc: { name: 'Breaker Block', status: '✅ Bullish', price: '$43,500', strength: 'High' },
-        },
-        {
-            pair: 'ADA/USD',
-            timeframe: '1D',
-            pattern: { name: 'Ascending Triangle', status: '✅ Bullish', confidence: '68%' },
-            indicator: { name: 'ATR', value: '1.2%', status: '🟡 High Volatility' },
-            smc: { name: 'Liquidity Pool', status: '🟡 Neutral', price: '$0.485', strength: 'Medium' },
-        },
-        {
-            pair: 'AVAX/USD',
-            timeframe: '2H',
-            pattern: { name: 'Falling Wedge', status: '✅ Bullish', confidence: '84%' },
-            indicator: { name: 'Bollinger Bands', value: 'Oversold', status: '✅ Bullish' },
-            smc: { name: 'Demand Zone', status: '✅ Bullish', price: '$35.20', strength: 'High' },
-        },
-        {
-            pair: 'MATIC/USD',
-            timeframe: '30M',
-            pattern: { name: 'Bear Flag', status: '❌ Bearish', confidence: '79%' },
-            indicator: { name: 'VWAP', value: 'Below', status: '❌ Bearish' },
-            smc: { name: 'Supply Zone', status: '❌ Bearish', price: '$0.92', strength: 'High' },
-        },
-    ];
+        smc: {
+            name: item.analysis.smcZone.type,
+            status:
+                item.analysis.smcZone.strength === "High"
+                    ? "✅ Bullish"
+                    : item.analysis.smcZone.strength === "Low"
+                        ? "🟡 Neutral"
+                        : "❌ Bearish",
+            price: item.analysis.smcZone.price,
+            strength: item.analysis.smcZone.strength
+        }
+    }));
 
     const renderItem = ({ item }) => (
         <View style={styles.analysisItem}>
             <View style={styles.itemHeader}>
                 <Text style={styles.pairText}>{item.pair} • {item.timeframe}</Text>
             </View>
+
+            {/* Pattern Recognition */}
             <View style={styles.section}>
                 <View style={styles.sectionTitleRow}>
                     <Feather name="target" size={18} color="#60a5fa" />
@@ -71,6 +64,8 @@ const OverallAnalysis = () => {
                     </View>
                 </View>
             </View>
+
+            {/* Technical Indicator */}
             <View style={styles.section}>
                 <View style={styles.sectionTitleRow}>
                     <MaterialCommunityIcons name="chart-line" size={20} color="#4ade80" />
@@ -87,6 +82,8 @@ const OverallAnalysis = () => {
                     </View>
                 </View>
             </View>
+
+            {/* SMC Zone */}
             <View style={styles.section}>
                 <View style={styles.sectionTitleRow}>
                     <Feather name="shield" size={20} color="#c084fc" />
@@ -141,8 +138,7 @@ const OverallAnalysis = () => {
                             horizontal
                             showsHorizontalScrollIndicator={false}
                             contentContainerStyle={styles.flatListContent}
-                            snapToInterval={300} // Adjust based on item width
-                            // decelerationRate="fast"
+                            snapToInterval={300}
                         />
                     </View>
                 </View>

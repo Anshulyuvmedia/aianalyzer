@@ -9,6 +9,7 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="notifications" options={{ headerShown: false }} />
             <Stack.Screen name="brokerconnection" options={{ headerShown: false }} />
             <Stack.Screen name="brokerapiconnect" options={{ headerShown: false }} />
+            <Stack.Screen name="OverallanalysisResult" options={{ headerShown: false }} />
         </Stack>
     );
 }

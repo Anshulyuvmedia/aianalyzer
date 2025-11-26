@@ -1,9 +1,10 @@
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
-import React from 'react';
-import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
+import { StyleSheet, Text, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
-const AIMarketInsights = () => {
+const AIMarketInsights = ({ data }) => {
+    const insights = data || [];
+    // console.log(JSON.stringify(insights, null, 3));
     return (
         <LinearGradient
             colors={['#AEAED4', '#000', '#AEAED4']}
@@ -23,24 +24,14 @@ const AIMarketInsights = () => {
                             <Feather name="trending-up" size={24} color="#60a5fa" />
                             <Text style={styles.header}>AI Market Insights</Text>
                         </View>
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Market Sentiment</Text>
-                            <Text style={styles.detail}>
-                                Overall bullish sentiment detected across major pairs. Strong momentum patterns emerging in BTC and SOL.
-                            </Text>
-                        </View>
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>High Confidence Signals</Text>
-                            <Text style={styles.detail}>
-                                3 patterns showing 85%+ confidence. Bull Flag on SOL/USD presents strongest opportunity.
-                            </Text>
-                        </View>
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Risk Assessment</Text>
-                            <Text style={styles.detail}>
-                                Moderate volatility detected. Consider position sizing and stop-loss placement carefully.
-                            </Text>
-                        </View>
+
+                        {/* Dynamic Insights List */}
+                        {insights.map((item, index) => (
+                            <View key={index} style={styles.section}>
+                                <Text style={styles.sectionTitle}>{item.title}</Text>
+                                <Text style={styles.detail}>{item.description}</Text>
+                            </View>
+                        ))}
                     </View>
                 </View>
             </LinearGradient>
