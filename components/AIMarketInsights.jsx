@@ -3,8 +3,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 const AIMarketInsights = ({ data }) => {
-    const insights = data || [];
-    // console.log(JSON.stringify(insights, null, 3));
+    const insights = data?.analysisData?.flatMap(
+        item => item?.analysisData?.aiInsights || []
+    ) || [];
+
     return (
         <LinearGradient
             colors={['#AEAED4', '#000', '#AEAED4']}

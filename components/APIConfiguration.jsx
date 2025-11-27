@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useContext, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { ConnectionContext } from "../app/context/ConnectionContext";
 
@@ -13,12 +13,13 @@ const APIConfiguration = ({ apiType }) => {
     const [showApiKey, setShowApiKey] = useState(false);
     const [showApiSecret, setShowApiSecret] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleToggleApiKey = () => setShowApiKey(!showApiKey);
     const handleToggleApiSecret = () => setShowApiSecret(!showApiSecret);
 
     const handleTestConnection = async () => {
-
+        setLoading(true);
         //Getting ID from Local storage as user is already logged in
         const savedUser = await AsyncStorage.getItem("userData");
         const { _id } = JSON.parse(savedUser);
@@ -42,7 +43,7 @@ const APIConfiguration = ({ apiType }) => {
 
             const data = response.data;
             console.log("Broker Response:", data);
-
+            Alert.alert("Success", 'Connection successful');
             if (data?.connection_status === true) {
                 setConnectionStatus(true);
             } else {
@@ -52,6 +53,8 @@ const APIConfiguration = ({ apiType }) => {
         } catch (error) {
             console.error("Error connecting:", error);
             setStatusMessage("Something went wrong. Try again ❌");
+        } finally {
+            setLoading(false); // Stop Loader
         }
     };
 
@@ -121,8 +124,12 @@ const APIConfiguration = ({ apiType }) => {
                                 </TouchableOpacity>
                             </View>
                         </View>
-                        <TouchableOpacity style={styles.saveButton} onPress={handleTestConnection}>
-                            <Text style={styles.saveText}>Test Connection</Text>
+                        <TouchableOpacity style={styles.saveButton} onPress={handleTestConnection} disabled={loading}>
+                            {loading ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                                <Text style={styles.saveText}>Test Connection</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -136,7 +143,7 @@ export default APIConfiguration;
 const styles = StyleSheet.create({
     container: {
         // flex: 1,
-        backgroundColor: 'black',
+        backgroundColor: '',
     },
     content: {
         // padding: 20,

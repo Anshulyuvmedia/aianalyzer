@@ -1,8 +1,13 @@
 import APIConfiguration from '@/components/APIConfiguration';
 import HomeHeader from '@/components/HomeHeader';
-import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useContext } from "react";
+import { StyleSheet, View } from 'react-native';
+import { ConnectionContext } from "../context/ConnectionContext";
+
+
 const Brokerapiconnect = () => {
+    const { connectionStatus } = useContext(ConnectionContext);
     const { apiType } = useLocalSearchParams();
     console.log(apiType);
     return (

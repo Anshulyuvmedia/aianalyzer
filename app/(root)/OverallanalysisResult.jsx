@@ -7,22 +7,23 @@ import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
-const OverallanalysisResult =  () => {
+const OverallanalysisResult = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [analysisData, setAnalysisData] = useState(null);
     const [aiInsights, setAiInsights] = useState(null);
 
 
     useEffect(() => {
-         const fetchOverallAnalysisData = async () => {
+        const fetchOverallAnalysisData = async () => {
             const savedUser = await AsyncStorage.getItem("userData");
             const parsedUser = JSON.parse(savedUser);
             const { _id } = parsedUser;
             try {
                 const response = await axios.get('http://192.168.1.27:3000/api/appdata/get-chart-analysis', { params: { userid: _id } });
                 setAnalysisData(response.data);
-                setAiInsights(response.data.analysisData.analysisData.aiInsights);
-                console.log(JSON.stringify(response.data.analysisData.analysisData.aiInsights,null,3));
+                // console.log(response.data?.analysisData?.[0]?.analysisData?.aiInsights);
+                setAiInsights(response.data?.analysisData?.[0]?.analysisData?.aiInsights);
+
             } catch (error) {
                 console.error("Failed to fetch overall analysis data:", error);
             }
@@ -33,8 +34,8 @@ const OverallanalysisResult =  () => {
 
 
     const components = [
-        { id: '1', component: <OverallAnalysis data={analysisData}/> },
-        { id: '2', component: <AIMarketInsights data={aiInsights}/> },
+        { id: '1', component: <OverallAnalysis data={analysisData} /> },
+        { id: '2', component: <AIMarketInsights data={analysisData} /> },
 
     ];
     const renderItem = ({ item }) => (

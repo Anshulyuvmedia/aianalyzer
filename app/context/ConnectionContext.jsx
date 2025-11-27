@@ -15,6 +15,7 @@ export const ConnectionProvider = ({ children }) => {
 
   // 🚀 Fetch Dashboard Data
   const fetchDashboardData = async () => {
+    // console.log("Fetching dashboard data...");
     try {
       const savedUser = await AsyncStorage.getItem("userData");
       if (!savedUser) return;

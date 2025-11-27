@@ -2,16 +2,14 @@ import { StyleSheet, View, FlatList, RefreshControl, Text } from 'react-native';
 import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import StrategyInput from '@/components/StrategyInput';
-import AIGuidance from '@/components/AIGuidance';
-import BacktestingResults from '@/components/BacktestingResults';
 
 const BackTesting = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     const components = [
         { id: '1', component: <StrategyInput /> },
-        { id: '2', component: <AIGuidance /> },
-        { id: '3', component: <BacktestingResults /> },
+        // { id: '2', component: <AIGuidance /> },
+        // { id: '3', component: <BacktestingResults /> },
 
     ];
 

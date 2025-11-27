@@ -76,7 +76,7 @@ const ReferralAccess = () => {
                                 <Text style={styles.summaryValue}>10% per trade</Text>
                             </View>
                         </View>
-                        <View style={styles.inviteSection}>
+                        {/* <View style={styles.inviteSection}>
                             <Text style={styles.sectionTitle}>Invite Friends</Text>
                             <View style={styles.inputWrapper}>
                                 <TextInput
@@ -91,8 +91,7 @@ const ReferralAccess = () => {
                                     <Text style={styles.sendText}>Send Invite</Text>
                                 </TouchableOpacity>
                             </View>
-                            {/* <Text style={styles.orText}>Or share your link via social apps</Text> */}
-                        </View>
+                        </View> */}
                         <View style={styles.recentReferralsSection}>
                             <Text style={styles.sectionTitle}>Recent Referrals</Text>
                             <View style={styles.tableHeader}>

@@ -3,7 +3,7 @@ import AiTrading from '@/components/AiTrading';
 import HomeHeader from '@/components/HomeHeader';
 import IndexCard from '@/components/IndexCard';
 import RecentTrades from '@/components/RecentTrades';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { ConnectionContext } from "../../context/ConnectionContext";
 const AlgoTrading = () => {
@@ -13,42 +13,50 @@ const AlgoTrading = () => {
     const aitrading = algotradingData?.aiTrading;
     const activeStrategies = algotradingData?.activeStrategies;
 
-    const [data] = useState({
-        dashboardMetrics: [
-            {
-                id: 'total-portfolio',
-                label: 'Total P&L',
-                value: summary?.totalPL,
-                changeColor: '#34C759',
-                iconColor: '#4ade80',
-                icon: 'dollar',
-            },
-            {
-                id: 'active-strategies',
-                label: 'Avg Win Rate',
-                value: summary?.avgWinRate,
-                iconColor: '#60a5fa',
-                changeColor: '#34C759',
-                icon: 'line-chart',
-            },
-            {
-                id: 'win-rate',
-                label: 'Total Trades',
-                value: summary?.totalTrades,
-                iconColor: '#facc15',
-                changeColor: '#34C759',
-                icon: 'activity',
-            },
-            {
-                id: 'max-drawdown',
-                label: 'Active Strategies',
-                value: summary?.activeStrategies,
-                iconColor: '#c084fc',
-                changeColor: '#FF3B15',
-                icon: 'play',
-            },
-        ],
+    const [data, setData] = useState({
+        dashboardMetrics: []
     });
+
+    useEffect(() => {
+        if (!summary) return;
+
+        setData({
+            dashboardMetrics: [
+                {
+                    id: 'total-portfolio',
+                    label: 'Total P&L',
+                    value: summary?.totalPL ?? 0,
+                    changeColor: '#34C759',
+                    iconColor: '#4ade80',
+                    icon: 'dollar',
+                },
+                {
+                    id: 'active-strategies',
+                    label: 'Avg Win Rate',
+                    value: summary?.avgWinRate ?? 0,
+                    iconColor: '#60a5fa',
+                    changeColor: '#34C759',
+                    icon: 'line-chart',
+                },
+                {
+                    id: 'win-rate',
+                    label: 'Total Trades',
+                    value: summary?.totalTrades ?? 0,
+                    iconColor: '#facc15',
+                    changeColor: '#34C759',
+                    icon: 'activity',
+                },
+                {
+                    id: 'max-drawdown',
+                    label: 'Active Strategies',
+                    value: summary?.activeStrategies ?? 0,
+                    iconColor: '#c084fc',
+                    changeColor: '#FF3B15',
+                    icon: 'play',
+                },
+            ],
+        });
+    }, [summary]);
 
     const [refreshing, setRefreshing] = useState(false);
 

@@ -15,8 +15,8 @@ const SupportedBrokers = () => {
             name: 'Delta Exchange',
             description: 'Crypto derivatives trading',
             commission: '0.005%',
-            status: 'Connect',
-            connected: connectionStatus,
+            status: 'Connected',
+            connection_status: connectionStatus,
             apiType: 'DELTA_EXCHANGE',
         }
     ];
@@ -46,12 +46,12 @@ const SupportedBrokers = () => {
                             <Text style={styles.header}>Supported Brokers</Text>
                         </View>
                         {brokers.map((broker, index) => (
-                            <View key={index} style={[styles.brokerCard, { borderColor: (broker.connected ? '#22c55e' : '#2563eb') }]}>
+                            <View key={index} style={[styles.brokerCard, { borderColor: (broker.connection_status ? '#22c55e' : '#2563eb') }]}>
                                 <View style={styles.brokerItem}>
                                     <Feather
                                         name={broker.icon}
                                         size={24}
-                                        color={broker.connected ? '#22c55e' : '#60a5fa'}
+                                        color={broker.connection_status ? '#22c55e' : '#60a5fa'}
                                         style={styles.brokerIcon}
                                     />
                                     <View style={styles.brokerInfo}>
@@ -62,12 +62,12 @@ const SupportedBrokers = () => {
                                             <Text style={styles.brokerCommission}>Commission: {broker.commission}</Text>
                                         </View>
                                     </View>
-                                    {broker.connected ? (
+                                    {broker.connection_status ? (
                                         <TouchableOpacity
-                                            style={[styles.connectButton, { backgroundColor: 'green' }]}
-                                            onPress={() => handleConnect(broker.name)}
+                                            style={[styles.connectButton, { backgroundColor: '#22c55e' }]}
+                                            onPress={() => handleConnect(broker.apiType)}
                                         >
-                                            <Text style={styles.connectedStatus}>{broker.status}</Text>
+                                            <Text style={styles.connectedStatus}>Connected</Text>
                                         </TouchableOpacity>
                                     ) : broker.status === 'Coming Soon' ? (
                                         <Text style={styles.comingSoonStatus}>{broker.status}</Text>
@@ -76,7 +76,7 @@ const SupportedBrokers = () => {
                                             style={styles.connectButton}
                                             onPress={() => handleConnect(broker.apiType)}
                                         >
-                                            <Text style={styles.connectText}>{broker.status}</Text>
+                                            <Text style={styles.connectText}>Connect</Text>
                                         </TouchableOpacity>
                                     )}
                                 </View>
