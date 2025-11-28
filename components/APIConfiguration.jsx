@@ -30,7 +30,7 @@ const APIConfiguration = ({ apiType }) => {
             return;
         }
         try {
-            const response = await axios.post("http://192.168.1.27:3000/api/connect-api", {
+            const response = await axios.post("http://192.168.1.42:3000/api/connect-api", {
                 userId: _id,
                 apiType: apiType,
                 apiKey: apiKey,

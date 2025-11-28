@@ -1,10 +1,10 @@
 import AIMarketInsights from '@/components/AIMarketInsights';
 import HomeHeader from '@/components/HomeHeader';
 import OverallAnalysis from '@/components/OverallAnalysis';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import axios from 'axios';
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 const OverallanalysisResult = () => {
@@ -19,7 +19,7 @@ const OverallanalysisResult = () => {
             const parsedUser = JSON.parse(savedUser);
             const { _id } = parsedUser;
             try {
-                const response = await axios.get('http://192.168.1.27:3000/api/appdata/get-chart-analysis', { params: { userid: _id } });
+                const response = await axios.get('http://192.168.1.42:3000/api/appdata/get-chart-analysis', { params: { userid: _id } });
                 setAnalysisData(response.data);
                 // console.log(response.data?.analysisData?.[0]?.analysisData?.aiInsights);
                 setAiInsights(response.data?.analysisData?.[0]?.analysisData?.aiInsights);

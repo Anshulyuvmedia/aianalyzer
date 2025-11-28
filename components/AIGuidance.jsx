@@ -36,13 +36,13 @@ const AIGuidance = () => {
             colors={['#AEAED4', '#000', '#AEAED4']}
             start={{ x: 1, y: 0 }}
             end={{ x: 0, y: 1 }}
-            style={styles.gradientBoxBorder}
+            style={styles.gradientBoxBorderaiguide}
         >
             <LinearGradient
                 colors={['#1e2836', '#111827', '#1e2836']}
                 start={{ x: 0.4, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.innerGradient}
+                style={styles.innerGradientaiguide}
             >
                 <View style={styles.container}>
                     <View style={styles.headerRow}>
@@ -122,11 +122,11 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 10,
     },
-    gradientBoxBorder: {
+    gradientBoxBorderaiguide: {
         borderRadius: 15,
         padding: 1,
     },
-    innerGradient: {
+    innerGradientaiguide: {
         borderRadius: 14,
         padding: 15,
     },

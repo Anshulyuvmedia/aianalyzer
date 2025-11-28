@@ -69,7 +69,7 @@ const SelectTradingPairs = () => {
         const { _id } = JSON.parse(savedUser);
 
         try {
-            const response = await axios.post("http://192.168.1.27:3000/api/appdata/chart-analysis", {
+            const response = await axios.post("http://192.168.1.42:3000/api/appdata/chart-analysis", {
                 activeTab,
                 selectedPairs,
                 analysisType,

@@ -48,8 +48,6 @@ const BackTesting = () => {
     )
 }
 
-export default BackTesting
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -60,3 +58,5 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
 })
+
+export default BackTesting;

@@ -4,7 +4,7 @@ import { createContext, useEffect, useState } from "react";
 export const ConnectionContext = createContext();
 
 export const ConnectionProvider = ({ children }) => {
-  const BASE_URL = "http://192.168.1.27:3000/api/appdata";
+  const BASE_URL = "http://192.168.1.42:3000/api/appdata";
   const [connectionStatus, setConnectionStatus] = useState(false); // default false
   const [dashboardData, setDashboardData] = useState(null);
   const [algotradingData, setAlgotradingData] = useState(null);
