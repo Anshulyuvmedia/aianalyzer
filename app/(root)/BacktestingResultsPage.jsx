@@ -1,15 +1,13 @@
+import { StyleSheet, View, FlatList, RefreshControl, Text } from 'react-native';
+import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
-import StrategyInput from '@/components/StrategyInput';
-import { useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import BacktestingResults from '@/components/BacktestingResults';
 
-const BackTesting = () => {
+const BacktestingResultsPage = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     const components = [
-        { id: '1', component: <StrategyInput /> },
-        // { id: '2', component: <AIGuidance /> },
-        // { id: '3', component: <BacktestingResults /> },
+        { id: '1', component: <BacktestingResults /> },
 
     ];
 
@@ -59,4 +57,4 @@ const styles = StyleSheet.create({
     },
 })
 
-export default BackTesting;
+export default BacktestingResultsPage;

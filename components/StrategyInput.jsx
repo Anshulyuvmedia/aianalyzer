@@ -1,12 +1,16 @@
 import Feather from '@expo/vector-icons/Feather';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from '@react-native-picker/picker';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from "expo-router";
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
+
 const StrategyInput = () => {
+    const router = useRouter();
     const [selectedDuration, setSelectedDuration] = useState(null);
     const [market, setMarket] = useState("");
     const [selectedSymbol, setSelectedSymbol] = useState("");
@@ -15,25 +19,11 @@ const StrategyInput = () => {
     const [stopLossText, setStopLossText] = useState("");
     const [targetText, setTargetText] = useState("");
     const [exitText, setExitText] = useState("");
-    const indicatorOptions = [
-        { label: "RSI", value: "RSI" },
-        { label: "Price", value: "price" },
-        { label: "SMA", value: "SMA" },
-        { label: "EMA", value: "EMA" }
-    ];
+    const [loading, setLoading] = useState(false);
 
-    const operatorOptions = [
-        { label: "Crosses Above", value: "cross_above" },
-        { label: "Crosses Below", value: "cross_below" },
-        { label: "Above", value: "above" },
-        { label: "Below", value: "below" }
-    ];
     const [entryConditions, setEntryConditions] = useState([
         { indicator: "", operator: "", value: "" }
     ]);
-
-
-
 
     const SYMBOLS = {
         stocks: [
@@ -60,8 +50,6 @@ const StrategyInput = () => {
         Wednesday: true,
         Thursday: true,
         Friday: true,
-        Saturday: false,
-        Sunday: false,
     });
 
     const handleDurationSelect = (duration) => {
@@ -74,7 +62,6 @@ const StrategyInput = () => {
             [day]: !prev[day],
         }));
     };
-
 
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -94,6 +81,7 @@ const StrategyInput = () => {
     };
 
     const handleRunBacktest = async () => {
+        setLoading(true);
         try {
             if (!market || !selectedSymbol) {
                 alert("Please select Market and Symbol");
@@ -110,37 +98,22 @@ const StrategyInput = () => {
                 return;
             }
 
+            const savedUser = await AsyncStorage.getItem("userData");
+            const { _id } = JSON.parse(savedUser);
+
             // Convert text to array
             const entryArray = entryText.split("\n").filter(line => line.trim() !== "");
             const stopLossArray = stopLossText.split("\n").filter(line => line.trim() !== "");
             const targetArray = targetText.split("\n").filter(line => line.trim() !== "");
             const exitArray = exitText ? exitText.split("\n").filter(line => line.trim() !== "") : [];
 
-            // Map duration → proper timeframe for Twelve Data API
-            const durationToTimeframe = {
-                "1month": "1h",      // 1 month → hourly data
-                "6months": "1day",   // 6 months → daily
-                "12months": "1week", // 1 year → weekly
-            };
-
-            const timeframe = durationToTimeframe[selectedDuration] || "1day";
-
-            // Map duration → approximate number of candles (outputsize)
-            const durationToOutputSize = {
-                "1month": 2000,
-                "6months": 3000,
-                "12months": 2500, // weekly candles over 1 year ≈ 52, but we request more for safety
-            };
-
-            const outputsize = durationToOutputSize[selectedDuration] || 2000;
 
             // Create FormData
             const formData = new FormData();
+            formData.append("userId", _id);
             formData.append("market", market);
             formData.append("symbol", selectedSymbol);
-            formData.append("timeframe", timeframe);           // Critical: send interval
-            formData.append("outputsize", outputsize);         // Critical: send number of candles
-            formData.append("duration", selectedDuration);     // optional: for logging
+            formData.append("duration", selectedDuration);
             formData.append("days", JSON.stringify(selectedDays));
 
             formData.append("entryConditions", JSON.stringify(entryArray));
@@ -156,21 +129,35 @@ const StrategyInput = () => {
                 });
             }
 
-            console.log("Submitting backtest with:", { symbol: selectedSymbol, timeframe, outputsize });
-
-            const response = await axios.post("http://192.168.1.42:3000/api/appdata/run-backtest", formData);
-            const result = response.data;
-            console.log("Backtest Result:", result);
-
-            if (result.error) {
-                alert("Backtest failed: " + result.error);
-            } else {
-                alert(`Backtest Complete!\nWin Rate: ${result.winRate}%\nFinal Balance: $${result.balance}`);
+            const formDataEntries = {};
+            for (let pair of formData.entries()) {
+                formDataEntries[pair[0]] = pair[1];
             }
+            // console.log("Submitting backtest with FormData:", JSON.stringify(formDataEntries,null,3));
+
+            const response = await axios.post(
+                "http://192.168.1.42:3000/api/appdata/run-backtest",
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                    timeout: 20000 // important for large formData or slow network
+                }
+            );
+
+
+            const result = response.data;
+            console.log("Data:", JSON.stringify(result, null, 3));
+            alert("Backtest Complete!");
+            router.push('../../(root)/BacktestingResultsPage');
 
         } catch (error) {
             console.error("Submit Error:", error);
-            alert("Network or server error. Check console.");
+            const targetUrl = error.config?.url || "unknown address";
+            alert(`Network or server error. Check console. Attempted to reach: ${targetUrl}`);
+        } finally {
+            setLoading(false); // Stop Loader
         }
     };
 
@@ -381,8 +368,14 @@ const StrategyInput = () => {
                             </View>
                         </View>
                         <TouchableOpacity style={styles.runButton} onPress={handleRunBacktest}>
-                            <Feather name="play" size={16} color="#FFFFFF" />
-                            <Text style={styles.runButtonText}>Run Backtest</Text>
+                            {loading ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Feather name="play" size={16} color="#FFFFFF" />
+                                    <Text style={styles.runButtonText}>Run Backtest</Text>
+                                </View>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </LinearGradient>
