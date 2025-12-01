@@ -10,7 +10,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 const OverallanalysisResult = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [analysisData, setAnalysisData] = useState(null);
-    const [aiInsights, setAiInsights] = useState(null);
+    // const [aiInsights, setAiInsights] = useState(null);
 
 
     useEffect(() => {
@@ -22,7 +22,7 @@ const OverallanalysisResult = () => {
                 const response = await axios.get('http://192.168.1.42:3000/api/appdata/get-chart-analysis', { params: { userid: _id } });
                 setAnalysisData(response.data);
                 // console.log(response.data?.analysisData?.[0]?.analysisData?.aiInsights);
-                setAiInsights(response.data?.analysisData?.[0]?.analysisData?.aiInsights);
+                // setAiInsights(response.data?.analysisData?.[0]?.analysisData?.aiInsights);
 
             } catch (error) {
                 console.error("Failed to fetch overall analysis data:", error);
@@ -35,7 +35,7 @@ const OverallanalysisResult = () => {
 
     const components = [
         { id: '1', component: <OverallAnalysis data={analysisData} /> },
-        { id: '2', component: <AIMarketInsights data={analysisData} /> },
+        // { id: '2', component: <AIMarketInsights data={analysisData} /> },
 
     ];
     const renderItem = ({ item }) => (

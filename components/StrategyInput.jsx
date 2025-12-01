@@ -161,6 +161,9 @@ const StrategyInput = () => {
         }
     };
 
+    const handleBackTestResults = () => {
+        router.push('../../(root)/BacktestingResultsPage');
+    };
 
 
     return (
@@ -378,6 +381,9 @@ const StrategyInput = () => {
                             )}
                         </TouchableOpacity>
                     </View>
+                    <TouchableOpacity onPress={handleBackTestResults}>
+                        <Text style={styles.viewAllAnalysisText}>View Results</Text>
+                    </TouchableOpacity>
                 </LinearGradient>
             </LinearGradient>
         </>
@@ -616,5 +622,13 @@ const styles = StyleSheet.create({
         fontWeight: 500,
         marginTop: 10
     },
+    viewAllAnalysisText: {
+        color: '#A0AEC0',
+        fontSize: 16,
+        fontWeight: '400',
+        textAlign: 'center',
+        textDecorationLine: 'underline',
+        marginTop: 15,
+    }
 
 });

@@ -20,41 +20,86 @@ const APIConfiguration = ({ apiType }) => {
 
     const handleTestConnection = async () => {
         setLoading(true);
-        //Getting ID from Local storage as user is already logged in
+
         const savedUser = await AsyncStorage.getItem("userData");
         const { _id } = JSON.parse(savedUser);
-        console.log("User ID:", _id);
 
         if (!apiKey || !apiSecret) {
             Alert.alert("Error", 'Please enter both API Key and API Secret');
+            setLoading(false);
             return;
         }
+
+        // 🔍 STEP: Check existing saved connection first
+        let savedConnections = await AsyncStorage.getItem("brokerConnections");
+        savedConnections = savedConnections ? JSON.parse(savedConnections) : [];
+
+        const existingConnection = savedConnections.find(
+            item => item.apiType === apiType && item.apiKey === apiKey
+        );
+
+        if (existingConnection && existingConnection.connection_status === true) {
+            Alert.alert("Already Connected", "Using saved connection ✔");
+            setConnectionStatus(true);
+            setLoading(false);
+            return; // STOP HERE — No backend call
+        }
+
+        // Otherwise → Call backend
         try {
-            const response = await axios.post("http://192.168.1.42:3000/api/connect-api", {
-                userId: _id,
-                apiType: apiType,
-                apiKey: apiKey,
-                apiSecret: apiSecret,
-            }, {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
+            const response = await axios.post(
+                "http://192.168.1.42:3000/api/connect-api",
+                { userId: _id, apiType, apiKey, apiSecret },
+                { headers: { "Content-Type": "application/json" } }
+            );
 
             const data = response.data;
             console.log("Broker Response:", data);
-            Alert.alert("Success", 'Connection successful');
-            if (data?.connection_status === true) {
-                setConnectionStatus(true);
+
+            Alert.alert("Success", "Connection successful");
+
+            const newObj = {
+                userId: _id,
+                apiType,
+                apiKey,
+                apiSecret,
+                connection_status: data.connection_status,
+                lastTested: new Date().toISOString()
+            };
+
+            // Update saved broker connections
+            if (existingConnection) {
+                const updated = savedConnections.map(conn =>
+                    conn.apiType === apiType && conn.apiKey === apiKey
+                        ? newObj
+                        : conn
+                );
+                await AsyncStorage.setItem("brokerConnections", JSON.stringify(updated));
             } else {
-                setConnectionStatus(false);
+                savedConnections.push(newObj);
+                await AsyncStorage.setItem("brokerConnections", JSON.stringify(savedConnections));
             }
+
+            setConnectionStatus(data.connection_status);
+            showStoredConnections();
 
         } catch (error) {
             console.error("Error connecting:", error);
-            setStatusMessage("Something went wrong. Try again ❌");
-        } finally {
-            setLoading(false); // Stop Loader
+            setStatusMessage("Something went wrong ❌");
+        }
+
+        setLoading(false);
+    };
+
+    const showStoredConnections = async () => {
+        try {
+            const stored = await AsyncStorage.getItem("brokerConnections");
+            const parsed = stored ? JSON.parse(stored) : [];
+
+            console.log("📌 Local Broker Connections:", parsed);
+            return parsed;
+        } catch (error) {
+            console.log("Error reading storage:", error);
         }
     };
 

@@ -12,8 +12,9 @@ export const ConnectionProvider = ({ children }) => {
   const [loadingCopytrading, setLoadingCopytrading] = useState(true);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [loadingAlgotrading, setLoadingAlgotrading] = useState(true);
+  const [notifications, setnotifications] = useState(null);
 
-  // 🚀 Fetch Dashboard Data
+
   const fetchDashboardData = async () => {
     // console.log("Fetching dashboard data...");
     try {
@@ -109,11 +110,24 @@ export const ConnectionProvider = ({ children }) => {
       setLoadingCopytrading(false);
     }
   };
+  const FetchNotifications = async () => {
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/get-notifications`
+      );
+      // console.log("Notifications fetch failed:", response.data);
+      setnotifications(response.data);
+    } catch (error) {
+      console.log("Notifications fetch failed:", error);
+    }
+  };
 
   useEffect(() => {
     fetchDashboardData();
     fetchAlogtradingData();
     FetchCopyTradingData();
+    FetchNotifications();
+
     // Auto-refresh every 5 minutes
     // const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     // return () => clearInterval(interval);
@@ -121,7 +135,7 @@ export const ConnectionProvider = ({ children }) => {
 
   return (
     <ConnectionContext.Provider value={
-      { connectionStatus, setConnectionStatus, dashboardData, loadingDashboard, algotradingData, loadingAlgotrading, copytradingData, loadingCopytrading }
+      { notifications, connectionStatus, setConnectionStatus, dashboardData, loadingDashboard, algotradingData, loadingAlgotrading, copytradingData, loadingCopytrading }
     }>
       {children}
     </ConnectionContext.Provider>

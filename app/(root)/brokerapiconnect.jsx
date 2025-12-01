@@ -9,7 +9,6 @@ import { ConnectionContext } from "../context/ConnectionContext";
 const Brokerapiconnect = () => {
     const { connectionStatus } = useContext(ConnectionContext);
     const { apiType } = useLocalSearchParams();
-    console.log(apiType);
     return (
         <View style={styles.container}>
             <HomeHeader page="broker" title="Broker API" subtitle="Configure your broker API credentials for automated trading" />
