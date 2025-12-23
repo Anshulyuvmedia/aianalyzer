@@ -4,7 +4,7 @@ import { createContext, useEffect, useState } from "react";
 export const ConnectionContext = createContext();
 
 export const ConnectionProvider = ({ children }) => {
-  const BASE_URL = "http://192.168.1.42:3000/api/appdata";
+  const BASE_URL = "http://192.168.1.26:3000/api/appdata";
   const [connectionStatus, setConnectionStatus] = useState(false); // default false
   const [dashboardData, setDashboardData] = useState(null);
   const [algotradingData, setAlgotradingData] = useState(null);
@@ -13,7 +13,8 @@ export const ConnectionProvider = ({ children }) => {
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [loadingAlgotrading, setLoadingAlgotrading] = useState(true);
   const [notifications, setnotifications] = useState(null);
-
+  const [referralData, setReferralData] = useState(null);
+  const [loadingReferral, setLoadingReferral] = useState(true);
 
   const fetchDashboardData = async () => {
     // console.log("Fetching dashboard data...");
@@ -31,8 +32,10 @@ export const ConnectionProvider = ({ children }) => {
       setDashboardData(response.data);
 
       // Save in local cache
-      await AsyncStorage.setItem("dashboardCache", JSON.stringify(response.data));
-
+      await AsyncStorage.setItem(
+        "dashboardCache",
+        JSON.stringify(response.data)
+      );
 
       setLoadingDashboard(false);
     } catch (error) {
@@ -62,8 +65,10 @@ export const ConnectionProvider = ({ children }) => {
       setAlgotradingData(response.data);
 
       // Save in local cache
-      await AsyncStorage.setItem("algotradingCache", JSON.stringify(response.data));
-
+      await AsyncStorage.setItem(
+        "algotradingCache",
+        JSON.stringify(response.data)
+      );
 
       setLoadingAlgotrading(false);
     } catch (error) {
@@ -94,8 +99,10 @@ export const ConnectionProvider = ({ children }) => {
       setCopytradingData(response.data);
 
       // Save in local cache
-      await AsyncStorage.setItem("copytradingCache", JSON.stringify(response.data));
-
+      await AsyncStorage.setItem(
+        "copytradingCache",
+        JSON.stringify(response.data)
+      );
 
       setLoadingCopytrading(false);
     } catch (error) {
@@ -112,13 +119,24 @@ export const ConnectionProvider = ({ children }) => {
   };
   const FetchNotifications = async () => {
     try {
-      const response = await axios.get(
-        `${BASE_URL}/get-notifications`
-      );
+      const response = await axios.get(`${BASE_URL}/get-notifications`);
       // console.log("Notifications fetch failed:", response.data);
       setnotifications(response.data);
     } catch (error) {
       console.log("Notifications fetch failed:", error);
+    }
+  };
+  const fetchReferralData = async () => {
+    setLoadingReferral(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/referrals`);
+
+      const data = response.data.data;
+      setReferralData(data);
+    } catch (error) {
+      console.log("Error fetching referrals:", error);
+    } finally {
+      setLoadingReferral(false);
     }
   };
 
@@ -127,16 +145,30 @@ export const ConnectionProvider = ({ children }) => {
     fetchAlogtradingData();
     FetchCopyTradingData();
     FetchNotifications();
+    fetchReferralData();
 
+    
     // Auto-refresh every 5 minutes
     // const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     // return () => clearInterval(interval);
   }, []);
 
   return (
-    <ConnectionContext.Provider value={
-      { notifications, connectionStatus, setConnectionStatus, dashboardData, loadingDashboard, algotradingData, loadingAlgotrading, copytradingData, loadingCopytrading }
-    }>
+    <ConnectionContext.Provider
+      value={{
+        notifications,
+        connectionStatus,
+        setConnectionStatus,
+        dashboardData,
+        loadingDashboard,
+        algotradingData,
+        loadingAlgotrading,
+        copytradingData,
+        loadingCopytrading,
+        referralData,
+        loadingReferral,
+      }}
+    >
       {children}
     </ConnectionContext.Provider>
   );
