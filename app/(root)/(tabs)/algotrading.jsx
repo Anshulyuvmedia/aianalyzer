@@ -8,7 +8,8 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { ConnectionContext } from "../../context/ConnectionContext";
 const AlgoTrading = () => {
     const { dashboardData, loadingDashboard, loadingAlgotrading, algotradingData } = useContext(ConnectionContext);
-    const recentTrades = dashboardData?.recentTrades;
+    const rawDashboard = dashboardData?.dashboardData;
+    const recentTrades = rawDashboard?.recentTrades;
     const summary = algotradingData?.summary;
     const aitrading = algotradingData?.aiTrading;
     const activeStrategies = algotradingData?.activeStrategies;
@@ -64,7 +65,7 @@ const AlgoTrading = () => {
         { id: '1', component: <IndexCard data={data} page="algo" /> },
         { id: '2', component: <AiTrading data={aitrading} /> },
         { id: '3', component: <ActiveStrategies data={activeStrategies} /> },
-        { id: '4', component: <RecentTrades data={{ recentTrades }} /> },
+        { id: '4', component: <RecentTrades data={recentTrades} /> },
     ];
 
     const renderItem = ({ item }) => (

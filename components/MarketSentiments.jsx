@@ -4,29 +4,85 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 
-const MarketSentiments = ({ data }) => {
-    const [activeTab, setActiveTab] = useState('BTC/USD');
-    const [sentimentData, setSentimentData] = useState({});
+const MarketSentiments = ({ data = [] }) => {
+    const marketSentiments = data?.marketSentiment || data || [];
 
-    // Get current active coin data
+    const [activeTab, setActiveTab] = useState(null);
+    const [sentimentData, setSentimentData] = useState({});
+    const [availableTabs, setAvailableTabs] = useState([]);
+
+    // Clean symbol: e.g., "1000SHIBUSD" → "1000SHIB", "ADAUSD" → "ADA"
+    const cleanSymbol = (symbol = '') => {
+        return symbol.replace(/USD$/i, '').trim();
+    };
+
+    useEffect(() => {
+        if (!Array.isArray(marketSentiments) || marketSentiments.length === 0) {
+            setSentimentData({});
+            setAvailableTabs([]);
+            setActiveTab(null);
+            return;
+        }
+
+        const formatted = {};
+        const tabs = [];
+
+        marketSentiments.forEach((item) => {
+            const rawSymbol = item.symbol || '';
+            const cleanKey = cleanSymbol(rawSymbol);
+
+            if (cleanKey) {
+                tabs.push(cleanKey);
+
+                const priceNum = parseFloat(item.price || 0);
+                const formattedPrice = priceNum < 0.000001
+                    ? priceNum.toExponential(4)
+                    : priceNum.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 8,
+                      });
+
+                formatted[cleanKey] = {
+                    aiConfidence: item.ai_confidence ?? 0,
+                    sentimentScore: item.sentiment_score ?? 0,
+                    change24h: item.change_24h ?? 0,
+                    currentPrice: formattedPrice,
+                    sentimentLabel: item.sentiment ?? 'Neutral',
+                    description: item.market_mood ?? 'Loading...',
+                };
+            }
+        });
+
+        // Optional: sort tabs alphabetically for consistent order
+        tabs.sort();
+
+        setSentimentData(formatted);
+        setAvailableTabs(tabs);
+
+        // Set first available tab as active
+        if (tabs.length > 0) {
+            setActiveTab(tabs[0]);
+        }
+    }, [marketSentiments]);
+
+    // Current selected coin data
     const current = sentimentData[activeTab] || {};
     const {
         aiConfidence = 0,
         sentimentScore = 0,
         change24h = 0,
-        currentPrice = 0,
+        currentPrice = '0',
         sentimentLabel = 'Neutral',
-        description = 'Loading...'
+        description = 'Loading...',
     } = current;
 
-    // Circular progress setup
+    // Circular gauge setup
     const size = 120;
     const strokeWidth = 10;
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
-    const progress = (sentimentScore / 100) * circumference;
+    const progress = Math.max(0, Math.min(100, sentimentScore)) / 100 * circumference;
 
-    // Determine color based on sentiment
     const getSentimentColor = (score) => {
         if (score >= 66) return '#34C759'; // Greed - Green
         if (score >= 33) return '#FBBF24'; // Neutral - Yellow
@@ -35,39 +91,13 @@ const MarketSentiments = ({ data }) => {
 
     const sentimentColor = getSentimentColor(sentimentScore);
 
-    useEffect(() => {
-        if (!data || !data.marketSentiment) return;
-
-        const formatted = {};
-        Object.keys(data.marketSentiment).forEach(pair => {
-            const item = data.marketSentiment[pair];
-            formatted[pair] = {
-                aiConfidence: item.aiConfidence || 0,
-                sentimentScore: item.sentimentScore || 0,
-                change24h: item.change24h || 0,
-                currentPrice: item.currentPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00',
-                sentimentLabel: item.sentimentLabel || 'Neutral',
-                description:
-                    item.sentimentLabel === 'Greed'
-                        ? 'Market shows strong bullish sentiment and greed.'
-                        : item.sentimentLabel === 'Fear'
-                            ? 'Market shows fear and selling pressure.'
-                            : 'Market sentiment is neutral.'
-            };
-        });
-
-        setSentimentData(formatted);
-
-        // Set default active tab to first available
-        if (Object.keys(formatted).length > 0 && !formatted[activeTab]) {
-            setActiveTab(Object.keys(formatted)[0]);
-        }
-    }, [data]);
-
-    if (!data || Object.keys(sentimentData).length === 0) {
+    // Loading state
+    if (availableTabs.length === 0) {
         return (
             <View style={styles.container}>
-                <Text style={{ color: '#fff', textAlign: 'center' }}>Loading market sentiment...</Text>
+                <Text style={{ color: '#fff', textAlign: 'center', padding: 30 }}>
+                    Loading market sentiment...
+                </Text>
             </View>
         );
     }
@@ -87,7 +117,6 @@ const MarketSentiments = ({ data }) => {
                     style={styles.innerGradient}
                 >
                     <View style={styles.cardContent}>
-
                         {/* Header */}
                         <View style={styles.cardHeader}>
                             <View style={styles.headerLeft}>
@@ -101,37 +130,58 @@ const MarketSentiments = ({ data }) => {
                                 <Text style={styles.subText}>AI Confidence</Text>
                                 <View style={styles.aiConfidenceRow}>
                                     <View style={styles.aiSlider}>
-                                        <View style={[styles.aiSliderFill, {
-                                            width: `${aiConfidence}%`,
-                                            backgroundColor: getSentimentColor(aiConfidence)
-                                        }]} />
+                                        <View
+                                            style={[
+                                                styles.aiSliderFill,
+                                                {
+                                                    width: `${aiConfidence}%`,
+                                                    backgroundColor: getSentimentColor(aiConfidence),
+                                                },
+                                            ]}
+                                        />
                                     </View>
-                                    <Text style={[styles.aiConfidenceText, { color: getSentimentColor(aiConfidence) }]}>
-                                        {aiConfidence.toFixed(1)}%
+                                    <Text
+                                        style={[
+                                            styles.aiConfidenceText,
+                                            { color: getSentimentColor(aiConfidence) },
+                                        ]}
+                                    >
+                                        {aiConfidence.toFixed(0)}%
                                     </Text>
                                 </View>
                             </View>
                         </View>
 
-                        {/* Tabs */}
+                        {/* Dynamic Tabs - Only shows coins that actually have data */}
                         <View style={styles.tabContainer}>
-                            {Object.keys(sentimentData).map((tab) => (
+                            {availableTabs.map((tab) => (
                                 <TouchableOpacity
                                     key={tab}
                                     onPress={() => setActiveTab(tab)}
                                     style={[styles.tab, activeTab === tab && styles.activeTab]}
                                 >
-                                    <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                                        {tab.replace('/USD', '')}
+                                    <Text
+                                        numberOfLines={1}
+                                        ellipsizeMode="tail"
+                                        style={[
+                                            styles.tabText,
+                                            activeTab === tab && styles.activeTabText,
+                                            styles.tabLabel,
+                                        ]}
+                                    >
+                                        {tab}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
 
-                        {/* Sentiment Circle + Slider */}
+                        {/* Sentiment Section */}
                         <View style={styles.sentimentSection}>
                             <Text style={styles.sentimentTitle}>
-                                Sentiment: <Text style={{ color: sentimentColor, fontWeight: 'bold' }}>{sentimentLabel}</Text>
+                                Sentiment:{' '}
+                                <Text style={{ color: sentimentColor, fontWeight: 'bold' }}>
+                                    {sentimentLabel}
+                                </Text>
                             </Text>
 
                             <View style={styles.circleContainer}>
@@ -154,9 +204,7 @@ const MarketSentiments = ({ data }) => {
                                         strokeDasharray={circumference}
                                         strokeDashoffset={circumference - progress}
                                         strokeLinecap="round"
-                                        rotation="-90"
-                                        originX={size / 2}
-                                        originY={size / 2}
+                                        transform={`rotate(-90 ${size / 2} ${size / 2})`}
                                     />
                                     <SvgText
                                         x="50%"
@@ -167,7 +215,7 @@ const MarketSentiments = ({ data }) => {
                                         fill={sentimentColor}
                                         dy=".3em"
                                     >
-                                        {sentimentScore.toFixed(0)}
+                                        {sentimentScore}
                                     </SvgText>
                                 </Svg>
                             </View>
@@ -175,27 +223,47 @@ const MarketSentiments = ({ data }) => {
                             {/* Sentiment Bar */}
                             <View style={styles.sentimentBarContainer}>
                                 <View style={styles.sentimentBar}>
-                                    <View style={[styles.sentimentFill, { width: `${sentimentScore}%`, backgroundColor: sentimentColor }]} />
+                                    <View
+                                        style={{
+                                            width: `${sentimentScore}%`,
+                                            height: '100%',
+                                            backgroundColor: sentimentColor,
+                                            borderRadius: 6,
+                                        }}
+                                    />
                                 </View>
                                 <View style={styles.sentimentLabels}>
-                                    <Text style={[styles.labelText, { color: sentimentScore < 40 ? sentimentColor : '#666' }]}>Fear</Text>
-                                    <Text style={[styles.labelText, { color: sentimentScore >= 40 && sentimentScore <= 60 ? sentimentColor : '#666' }]}>Neutral</Text>
-                                    <Text style={[styles.labelText, { color: sentimentScore > 60 ? sentimentColor : '#666' }]}>Greed</Text>
+                                    <Text style={[styles.labelText, { color: sentimentScore < 40 ? sentimentColor : '#666' }]}>
+                                        Fear
+                                    </Text>
+                                    <Text style={[styles.labelText, { color: sentimentScore >= 40 && sentimentScore <= 60 ? sentimentColor : '#666' }]}>
+                                        Neutral
+                                    </Text>
+                                    <Text style={[styles.labelText, { color: sentimentScore > 60 ? sentimentColor : '#666' }]}>
+                                        Greed
+                                    </Text>
                                 </View>
                             </View>
                         </View>
 
-                        {/* Description Box */}
+                        {/* Market Mood Description */}
                         <View style={[styles.descriptionBox, { borderColor: sentimentColor }]}>
-                            <Text style={[styles.descriptionTitle, { color: sentimentColor }]}>Current Market Mood</Text>
+                            <Text style={[styles.descriptionTitle, { color: sentimentColor }]}>
+                                Current Market Mood
+                            </Text>
                             <Text style={styles.descriptionText}>{description}</Text>
                         </View>
 
-                        {/* Price & Change */}
+                        {/* Price & 24h Change */}
                         <View style={styles.metricsRow}>
                             <View style={styles.metric}>
                                 <Text style={styles.metricLabel}>24h Change</Text>
-                                <Text style={[styles.metricValue, { color: change24h >= 0 ? '#34C759' : '#FF3B30' }]}>
+                                <Text
+                                    style={[
+                                        styles.metricValue,
+                                        { color: change24h >= 0 ? '#34C759' : '#FF3B30' },
+                                    ]}
+                                >
                                     {change24h >= 0 ? '+' : ''}{change24h.toFixed(2)}%
                                 </Text>
                             </View>
@@ -204,8 +272,6 @@ const MarketSentiments = ({ data }) => {
                                 <Text style={styles.metricValue}>${currentPrice}</Text>
                             </View>
                         </View>
-
-                        <Text style={styles.lastUpdated}>Last updated: just now</Text>
                     </View>
                 </LinearGradient>
             </LinearGradient>
@@ -237,19 +303,19 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 4,
         marginBottom: 20,
-        gap: 6
+        gap: 6,
     },
-    tab: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10, flex: 1, alignItems: 'center' },
+    tab: { paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, flex: 1, alignItems: 'center' },
     activeTab: { backgroundColor: '#3b82f6' },
     tabText: { color: '#94a3b8', fontSize: 13, fontWeight: '500' },
     activeTabText: { color: '#fff', fontWeight: '700' },
+    tabLabel: { maxWidth: 90, textAlign: 'center' },
 
     sentimentSection: { alignItems: 'center', marginBottom: 20 },
     sentimentTitle: { color: '#e2e8f0', fontSize: 17, fontWeight: '600', marginBottom: 16 },
     circleContainer: { marginBottom: 16 },
     sentimentBarContainer: { width: '100%', alignItems: 'center' },
     sentimentBar: { width: '100%', height: 8, backgroundColor: '#1e293b', borderRadius: 4, overflow: 'hidden' },
-    sentimentFill: { height: '100%', borderRadius: 4 },
     sentimentLabels: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 8 },
     labelText: { fontSize: 13, color: '#64748b' },
 
@@ -261,6 +327,4 @@ const styles = StyleSheet.create({
     metric: { alignItems: 'center' },
     metricLabel: { color: '#94a3b8', fontSize: 13, marginBottom: 4 },
     metricValue: { color: '#fff', fontSize: 18, fontWeight: '700' },
-
-    lastUpdated: { textAlign: 'center', color: '#64748b', fontSize: 12, marginTop: 8 }
 });

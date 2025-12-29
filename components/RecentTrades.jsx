@@ -3,8 +3,17 @@ import { StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 const RecentTrades = ({ data }) => {
-    const trades = data?.recentTrades || [];
-    // console.log("Trades:", JSON.stringify(trades, null, 3));
+    const trades = data || [];
+
+    // Map API fields to UI fields
+    const mappedTrades = trades.map(trade => ({
+        pair: trade.symbol,
+        direction: trade.side,
+        timeAgo: new Date(trade.time).toLocaleString(),
+        percent: ((trade.fee / trade.notional) * 100).toFixed(2),
+        entry: trade.price,
+        exit: trade.price,
+    }));
 
     return (
         <LinearGradient
@@ -25,18 +34,21 @@ const RecentTrades = ({ data }) => {
                         <Text style={styles.header}>Recent Trades</Text>
                     </View>
 
-                    {trades.map((trade, index) => (
+                    {mappedTrades.map((trade, index) => (
                         <View key={index} style={styles.tradeItem}>
-                            {/* LEFT SIDE */}
                             <View style={styles.tradeInfo}>
                                 <Text style={styles.pair}>{trade.pair}</Text>
-
-                                <Text style={styles.tradeDetails}>
+                                <Text
+                                    style={[
+                                        styles.tradeDetails,
+                                        trade.direction === 'sell' ? styles.sell : styles.buy,
+                                    ]}
+                                >
                                     {trade.direction} • {trade.timeAgo}
                                 </Text>
+
                             </View>
 
-                            {/* RIGHT SIDE */}
                             <View style={styles.priceContainer}>
                                 <Text
                                     style={[
@@ -46,7 +58,6 @@ const RecentTrades = ({ data }) => {
                                 >
                                     {trade.percent >= 0 ? `+${trade.percent}%` : `${trade.percent}%`}
                                 </Text>
-
                                 <Text style={styles.priceRange}>
                                     {trade.entry} → {trade.exit}
                                 </Text>
@@ -58,6 +69,7 @@ const RecentTrades = ({ data }) => {
         </LinearGradient>
     );
 };
+
 
 export default RecentTrades;
 
@@ -123,4 +135,20 @@ const styles = StyleSheet.create({
     negative: {
         color: '#FF3B30',
     },
+    tradeDetails: {
+        fontSize: 13,
+        marginTop: 2,
+        color: '#9CA3AF', // default fallback
+    },
+
+    sell: {
+        color: '#34C759', // green
+        fontWeight: '700',
+    },
+
+    buy: {
+        color: '#FF3B30', // red
+        fontWeight: '700',
+    },
+
 });

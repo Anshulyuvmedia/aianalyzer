@@ -8,11 +8,15 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { ConnectionContext } from "../../context/ConnectionContext";
 
 const Index = () => {
-  const { dashboardData, loadingDashboard } = useContext(ConnectionContext);
-  const overview = dashboardData?.overview;
-  const marketSentiment = dashboardData?.marketSentiment;
-  const recentTrades = dashboardData?.recentTrades;
-  const activeAlerts = dashboardData?.alerts;
+  const { dashboardData } = useContext(ConnectionContext);
+  const rawDashboard = dashboardData?.dashboardData;
+
+  const overview = rawDashboard;
+  const marketSentiment = rawDashboard?.marketSentiment;
+  const recentTrades = rawDashboard?.recentTrades;
+  // console.log("recentTrades", JSON.stringify(recentTrades,null,3));
+  const activeAlerts = rawDashboard?.alerts;
+
 
 
   const [refreshing, setRefreshing] = useState(false);
@@ -21,27 +25,18 @@ const Index = () => {
     {
       id: "total-portfolio",
       label: "Total Portfolio",
-      value: `$${overview.portfolioValue?.toLocaleString()}`,
-      change: `${overview.portfolioChange > 0 ? "+" : ""}${overview.portfolioChange}%`,
-      changeColor: overview.portfolioChange > 0 ? "#34C759" : "#FF3B15",
+      value: `$${overview.totalPortfolio.toLocaleString()}`,
+      change: "—",
+      changeColor: "#9CA3AF",
       iconColor: '#4ade80',
       icon: "dollar",
-    },
-    {
-      id: "active-strategies",
-      label: "Active Strategies",
-      value: overview.activeStrategies,
-      change: `${overview.strategiesChange > 0 ? "+" : ""}${overview.strategiesChange}`,
-      changeColor: overview.strategiesChange > 0 ? "#34C759" : "#FF3B15",
-      iconColor: '#60a5fa',
-      icon: "activity",
     },
     {
       id: "win-rate",
       label: "Win Rate",
       value: `${overview.winRate}%`,
-      change: `${overview.winRateChange > 0 ? "+" : ""}${overview.winRateChange}%`,
-      changeColor: overview.winRateChange > 0 ? "#34C759" : "#FF3B15",
+      change: "—",
+      changeColor: "#9CA3AF",
       iconColor: '#c084fc',
       icon: "target",
     },
@@ -49,19 +44,30 @@ const Index = () => {
       id: "max-drawdown",
       label: "Max Drawdown",
       value: `${overview.maxDrawdown}%`,
-      change: `${overview.drawdownChange > 0 ? "+" : ""}${overview.drawdownChange}%`,
-      changeColor: overview.drawdownChange > 0 ? "#34C759" : "#FF3B15",
+      change: "—",
+      changeColor: "#9CA3AF",
       iconColor: '#facc15',
       icon: "alert-triangle",
+    },
+    {
+      id: "active-strategies",
+      label: "Active Strategies",
+      value: `${overview.activeStrategies || 0}`,
+      change: "—",
+      changeColor: "#9CA3AF",
+      iconColor: '#facc15',
+      icon: "activity",
     }
+
   ] : [];
+
 
 
   const components = [
     { id: '1', component: <IndexCard data={{ dashboardMetrics: dynamicDashboardMetrics }} /> },
-    { id: '2', component: <MarketSentiments data={{ marketSentiment }} /> },
-    { id: '3', component: <RecentTrades data={{recentTrades}} /> },
-    { id: '4', component: <ActiveAlerts data={{activeAlerts}} /> },
+    { id: '2', component: <MarketSentiments data={marketSentiment} /> },
+    { id: '3', component: <RecentTrades data={recentTrades} /> },
+    // { id: '4', component: <ActiveAlerts data={{ activeAlerts }} /> },
   ];
 
   const renderItem = ({ item }) => (

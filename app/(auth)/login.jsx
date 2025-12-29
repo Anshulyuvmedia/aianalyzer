@@ -100,7 +100,7 @@ const Login = () => {
         if (!valid) return;
 
         try {
-            const res = await axios.post("http://192.168.1.26:3000/api/generateOtp", {
+            const res = await axios.post("http://192.168.1.28:3000/api/generateOtp", {
                 phoneNumber,
             });
 
@@ -151,7 +151,7 @@ const Login = () => {
         try {
             setLoadingVerify(true); // start loading
 
-            const res = await axios.post("http://192.168.1.26:3000/api/verifyOtp", {
+            const res = await axios.post("http://192.168.1.28:3000/api/verifyOtp", {
                 phoneNumber: phoneNumber,
                 otp: finalOtp,
             });

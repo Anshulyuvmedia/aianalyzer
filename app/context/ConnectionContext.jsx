@@ -4,7 +4,7 @@ import { createContext, useEffect, useState } from "react";
 export const ConnectionContext = createContext();
 
 export const ConnectionProvider = ({ children }) => {
-  const BASE_URL = "http://192.168.1.26:3000/api/appdata";
+  const BASE_URL = "http://192.168.1.28:3000/api/appdata";
   const [connectionStatus, setConnectionStatus] = useState(false); // default false
   const [dashboardData, setDashboardData] = useState(null);
   const [algotradingData, setAlgotradingData] = useState(null);
@@ -17,39 +17,42 @@ export const ConnectionProvider = ({ children }) => {
   const [loadingReferral, setLoadingReferral] = useState(true);
 
   const fetchDashboardData = async () => {
-    // console.log("Fetching dashboard data...");
     try {
-      const savedUser = await AsyncStorage.getItem("userData");
-      if (!savedUser) return;
+      setLoadingDashboard(true);
+      const response = await axios.get(`${BASE_URL}/dashboard-data`);
 
-      const { _id } = JSON.parse(savedUser);
-
-      const response = await axios.get(
-        `${BASE_URL}/dashboard-data?userid=${_id}`
-      );
-
-      // Save in global context
+      // Set state
       setDashboardData(response.data);
 
-      // Save in local cache
+      // Store in AsyncStorage
       await AsyncStorage.setItem(
-        "dashboardCache",
+        'dashboardData',
         JSON.stringify(response.data)
       );
-
-      setLoadingDashboard(false);
     } catch (error) {
       console.log("Dashboard fetch failed:", error);
-
-      // 🟡 Fallback to saved cache
-      const cache = await AsyncStorage.getItem("dashboardCache");
-      if (cache) {
-        setDashboardData(JSON.parse(cache));
-      }
-
+    } finally {
       setLoadingDashboard(false);
     }
   };
+
+  // Load dashboard data from AsyncStorage if available
+  const loadDashboardFromStorage = async () => {
+    try {
+      const storedData = await AsyncStorage.getItem('dashboardData');
+      console.log("Stored Data:", storedData);
+      if (storedData) {
+        setDashboardData(JSON.parse(storedData));
+      } else {
+        // If no stored data, fetch from API
+        fetchDashboardData();
+      }
+    } catch (error) {
+      console.log("Failed to load dashboard from storage:", error);
+      fetchDashboardData();
+    }
+  };
+
   const fetchAlogtradingData = async () => {
     try {
       const savedUser = await AsyncStorage.getItem("userData");
@@ -146,8 +149,8 @@ export const ConnectionProvider = ({ children }) => {
     FetchCopyTradingData();
     FetchNotifications();
     fetchReferralData();
+    loadDashboardFromStorage();
 
-    
     // Auto-refresh every 5 minutes
     // const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     // return () => clearInterval(interval);
