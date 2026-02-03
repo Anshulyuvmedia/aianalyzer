@@ -23,6 +23,7 @@ const Login = () => {
     const buttonScaleAnim = useRef(new Animated.Value(1)).current;
     const otpSheetRef = useRef(null);
     const [loadingVerify, setLoadingVerify] = useState(false);
+    const [otp,setOtp] = useState("");
 
     // Fade-in animation
     useEffect(() => {
@@ -100,7 +101,7 @@ const Login = () => {
         if (!valid) return;
 
         try {
-            const res = await axios.post("http://192.168.1.28:3000/api/generateOtp", {
+            const res = await axios.post("https://api.aianalyzer.in/api/generateOtp", {
                 phoneNumber,
             });
 
@@ -151,11 +152,11 @@ const Login = () => {
         try {
             setLoadingVerify(true); // start loading
 
-            const res = await axios.post("http://192.168.1.28:3000/api/verifyOtp", {
+            const res = await axios.post("https://api.aianalyzer.in/api/verifyOtp", {
                 phoneNumber: phoneNumber,
                 otp: finalOtp,
             });
-
+            console.log(res.data);
             setLoadingVerify(false); // stop loading
 
             if (res.data.status === true) {
@@ -165,6 +166,7 @@ const Login = () => {
                     'userData',
                     JSON.stringify(res.data.userdata)
                 );
+                setOtp(res.data.otp);
                 console.log("User saved into AsyncStorage");
 
 
@@ -211,10 +213,7 @@ const Login = () => {
                         Demo Credentials:
                     </Text>
                     <Text style={styles.credentialsText}>
-                        Email: user@gmail.com
-                    </Text>
-                    <Text style={styles.credentialsText}>
-                        Password: password123
+                        Mobile No: 9876543210
                     </Text>
                 </View>
 
@@ -263,7 +262,7 @@ const Login = () => {
                 openDuration={250}
                 customStyles={{ container: styles.sheet }}
             >
-                <Text style={styles.otpTitle}>Enter OTP</Text>
+                <Text style={styles.otpTitle}>Enter OTP : {otp}</Text>
                 <Text style={styles.otpSubtitle}>A 6-digit code has been sent to {phoneNumber}</Text>
 
                 {/* ---- NEW 6 BOX OTP UI ---- */}

@@ -1,34 +1,31 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { createContext, useEffect, useState } from "react";
+
 export const ConnectionContext = createContext();
 
 export const ConnectionProvider = ({ children }) => {
-  const BASE_URL = "http://192.168.1.28:3000/api/appdata";
-  const [connectionStatus, setConnectionStatus] = useState(false); // default false
+  const BASE_URL = "https://api.aianalyzer.in/api/appdata";
+
+  const [connectionStatus, setConnectionStatus] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [algotradingData, setAlgotradingData] = useState(null);
   const [copytradingData, setCopytradingData] = useState(null);
-  const [loadingCopytrading, setLoadingCopytrading] = useState(true);
+  const [notifications, setNotifications] = useState(null);
+  const [referralData, setReferralData] = useState(null);
+
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [loadingAlgotrading, setLoadingAlgotrading] = useState(true);
-  const [notifications, setnotifications] = useState(null);
-  const [referralData, setReferralData] = useState(null);
+  const [loadingCopytrading, setLoadingCopytrading] = useState(true);
   const [loadingReferral, setLoadingReferral] = useState(true);
+
+  /* ---------------- DASHBOARD ---------------- */
 
   const fetchDashboardData = async () => {
     try {
       setLoadingDashboard(true);
-      const response = await axios.get(`${BASE_URL}/dashboard-data`);
-
-      // Set state
+      const response = await axios.get(`${BASE_URL}/dashboard`);
       setDashboardData(response.data);
-
-      // Store in AsyncStorage
-      await AsyncStorage.setItem(
-        'dashboardData',
-        JSON.stringify(response.data)
-      );
     } catch (error) {
       console.log("Dashboard fetch failed:", error);
     } finally {
@@ -36,22 +33,7 @@ export const ConnectionProvider = ({ children }) => {
     }
   };
 
-  // Load dashboard data from AsyncStorage if available
-  const loadDashboardFromStorage = async () => {
-    try {
-      const storedData = await AsyncStorage.getItem('dashboardData');
-      console.log("Stored Data:", storedData);
-      if (storedData) {
-        setDashboardData(JSON.parse(storedData));
-      } else {
-        // If no stored data, fetch from API
-        fetchDashboardData();
-      }
-    } catch (error) {
-      console.log("Failed to load dashboard from storage:", error);
-      fetchDashboardData();
-    }
-  };
+  /* ---------------- ALGOTRADING ---------------- */
 
   const fetchAlogtradingData = async () => {
     try {
@@ -59,107 +41,102 @@ export const ConnectionProvider = ({ children }) => {
       if (!savedUser) return;
 
       const { _id } = JSON.parse(savedUser);
-
       const response = await axios.get(
         `${BASE_URL}/algotrading-data?userid=${_id}`
       );
 
-      // Save in global context
       setAlgotradingData(response.data);
-
-      // Save in local cache
       await AsyncStorage.setItem(
         "algotradingCache",
         JSON.stringify(response.data)
       );
-
-      setLoadingAlgotrading(false);
     } catch (error) {
       console.log("Algotrading fetch failed:", error);
-
-      // 🟡 Fallback to saved cache
       const cache = await AsyncStorage.getItem("algotradingCache");
-      if (cache) {
-        setAlgotradingData(JSON.parse(cache));
-      }
-
+      if (cache) setAlgotradingData(JSON.parse(cache));
+    } finally {
       setLoadingAlgotrading(false);
     }
   };
-  const FetchCopyTradingData = async () => {
+
+  /* ---------------- COPY TRADING ---------------- */
+
+  const fetchCopyTradingData = async () => {
     try {
       const savedUser = await AsyncStorage.getItem("userData");
       if (!savedUser) return;
 
       const { _id } = JSON.parse(savedUser);
-
       const response = await axios.get(
         `${BASE_URL}/copytrading-data?userid=${_id}`
       );
-      // console.log("Copytrading fetch failed:", response.data);
 
-      // Save in global context
       setCopytradingData(response.data);
-
-      // Save in local cache
       await AsyncStorage.setItem(
         "copytradingCache",
         JSON.stringify(response.data)
       );
-
-      setLoadingCopytrading(false);
     } catch (error) {
       console.log("Copytrading fetch failed:", error);
-
-      // 🟡 Fallback to saved cache
       const cache = await AsyncStorage.getItem("copytradingCache");
-      if (cache) {
-        setCopytradingData(JSON.parse(cache));
-      }
-
+      if (cache) setCopytradingData(JSON.parse(cache));
+    } finally {
       setLoadingCopytrading(false);
     }
   };
-  const FetchNotifications = async () => {
+
+  /* ---------------- NOTIFICATIONS ---------------- */
+
+  const fetchNotifications = async () => {
     try {
       const response = await axios.get(`${BASE_URL}/get-notifications`);
-      // console.log("Notifications fetch failed:", response.data);
-      setnotifications(response.data);
+      console.log("Notifications Data:", response);
+      setNotifications(response.data);
     } catch (error) {
       console.log("Notifications fetch failed:", error);
     }
   };
-  const fetchReferralData = async () => {
-    setLoadingReferral(true);
-    try {
-      const response = await axios.get(`${BASE_URL}/referrals`);
 
-      const data = response.data.data;
-      setReferralData(data);
+  /* ---------------- REFERRALS ---------------- */
+
+  const fetchReferralData = async () => {
+    try {
+      setLoadingReferral(true);
+      const response = await axios.get(`${BASE_URL}/referrals`);
+      setReferralData(response.data?.data || null);
     } catch (error) {
-      console.log("Error fetching referrals:", error);
+      console.log("Referral fetch failed:", error);
     } finally {
       setLoadingReferral(false);
     }
   };
 
+  /* ---------------- INITIAL LOAD ---------------- */
+
   useEffect(() => {
     fetchDashboardData();
     fetchAlogtradingData();
-    FetchCopyTradingData();
-    FetchNotifications();
+    fetchCopyTradingData();
+    fetchNotifications();
     fetchReferralData();
-    loadDashboardFromStorage();
-
-    // Auto-refresh every 5 minutes
-    // const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
-    // return () => clearInterval(interval);
   }, []);
+
+  /* ---------------- CACHE DASHBOARD ---------------- */
+
+  useEffect(() => {
+    if (!dashboardData) return;
+
+    AsyncStorage.setItem(
+      "dashboardData",
+      JSON.stringify(dashboardData)
+    );
+  }, [dashboardData]);
+
+  /* ---------------- CONTEXT PROVIDER ---------------- */
 
   return (
     <ConnectionContext.Provider
       value={{
-        notifications,
         connectionStatus,
         setConnectionStatus,
         dashboardData,
@@ -168,8 +145,10 @@ export const ConnectionProvider = ({ children }) => {
         loadingAlgotrading,
         copytradingData,
         loadingCopytrading,
+        notifications,
         referralData,
         loadingReferral,
+        fetchDashboardData,
       }}
     >
       {children}

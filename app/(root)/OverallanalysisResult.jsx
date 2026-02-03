@@ -18,10 +18,9 @@ const OverallanalysisResult = () => {
             const parsedUser = JSON.parse(savedUser);
             const { _id } = parsedUser;
             try {
-                const response = await axios.get('http://192.168.1.28:3000/api/appdata/get-chart-analysis', { params: { userid: _id } });
+                const response = await axios.get('https://api.aianalyzer.in/api/appdata/get-chart-analysis', { params: { userid: _id } });
                 setAnalysisData(response.data);
-                // console.log(response.data?.analysisData?.[0]?.analysisData?.aiInsights);
-                // setAiInsights(response.data?.analysisData?.[0]?.analysisData?.aiInsights);
+                console.log(response.data);
 
             } catch (error) {
                 console.error("Failed to fetch overall analysis data:", error);

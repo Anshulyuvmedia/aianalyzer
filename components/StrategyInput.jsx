@@ -136,7 +136,7 @@ const StrategyInput = () => {
             // console.log("Submitting backtest with FormData:", JSON.stringify(formDataEntries,null,3));
 
             const response = await axios.post(
-                "http://192.168.1.28:3000/api/appdata/run-backtest",
+                "https://api.aianalyzer.in/api/appdata/run-backtest",
                 formData,
                 {
                     headers: {

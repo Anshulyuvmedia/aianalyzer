@@ -4,13 +4,13 @@ import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import { useContext, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { ConnectionContext } from "../app/context/ConnectionContext";
@@ -62,7 +62,7 @@ const APIConfiguration = ({ apiType }) => {
 
     try {
       const response = await axios.post(
-        "http://192.168.1.28:3000/api/connect-api",
+        "https://api.aianalyzer.in/api/connect-api",
         { userId: _id, apiType, apiKey, apiSecret },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -81,8 +81,9 @@ const APIConfiguration = ({ apiType }) => {
       };
 
       await AsyncStorage.setItem("brokerConnection", JSON.stringify(brokerObj));
-
+      console.log("Broker Connection:", brokerObj);
       setConnectionStatus(data.connection_status);
+      // fetchDashboardData();
       setReconnectMode(false);
     } catch (error) {
       console.error("Connection Error:", error);

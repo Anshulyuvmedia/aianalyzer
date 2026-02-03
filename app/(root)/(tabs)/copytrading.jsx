@@ -55,7 +55,7 @@ const CopyTrading = () => {
         // { id: '1', component: <IndexCard data={data} page="algo" /> },
         { id: '2', component: <TopTraders toptradersdata={topTraders} /> },
         { id: '3', component: <RecentCopyTrades recentCopyTrades={recentCopyTrades} /> },
-        { id: '4', component: <CopyTradingPerformance /> },
+        // { id: '4', component: <CopyTradingPerformance /> },
     ];
 
     const renderItem = ({ item }) => (
