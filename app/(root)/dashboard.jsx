@@ -1,12 +1,11 @@
-import { StyleSheet, Text, View, TouchableOpacity, Alert, Dimensions } from 'react-native';
-import React from 'react';
+import HomeHeader from '@/components/HomeHeader';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import HomeHeader from '@/components/HomeHeader';
-import LinearGradient from 'react-native-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Haptics from 'react-native-haptic-feedback';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import LinearGradient from 'react-native-linear-gradient';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
