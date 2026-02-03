@@ -1,47 +1,16 @@
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
-import { Feather, Octicons, Ionicons, MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-const ActiveStrategies = () => {
-    const [strategies, setStrategies] = useState([
-        {
-            name: 'Momentum Scalper',
-            description: 'Short-term momentum strategy for high-frequency trading',
-            pnl: '$2340.50',
-            winRate: '76.3%',
-            trades: '45',
-            status: 'Active',
-            statusColor: '#14532d',
-        },
-        {
-            name: 'Mean Reversion Pro',
-            description: 'Counter-trend strategy targeting overbought/oversold conditions',
-            pnl: '$-156.20',
-            winRate: '68.1%',
-            trades: '32',
-            status: 'Paused',
-            statusColor: '#713f12',
-        },
-        {
-            name: 'Breakout Hunter',
-            description: 'Identifies and trades significant price breakouts',
-            pnl: '$1875.30',
-            winRate: '82.4%',
-            trades: '28',
-            status: 'Active',
-            statusColor: '#22c55e',
-        },
-        {
-            name: 'Grid Trading Bot',
-            description: 'Automated grid trading for sideways markets',
-            pnl: '$523.80',
-            winRate: '71.2%',
-            trades: '67',
-            status: 'Inactive',
-            statusColor: '#374151',
-        },
-    ]);
+const ActiveStrategies = ({ data }) => {
+    const [strategies, setStrategies] = useState([]);
+
+    useEffect(() => {
+        if (data) {
+            setStrategies(data);
+        }
+    }, [data]);
 
     const toggleStatus = (index) => {
         setStrategies(prevStrategies => {
@@ -120,7 +89,7 @@ const ActiveStrategies = () => {
 
                                 <View style={styles.strategyMetrics}>
                                     <View style={styles.metricItem}>
-                                        <Text style={[styles.metricValue, { color: strategy.pnl.startsWith('-') ? '#FF3B15' : '#34C759' }]}>
+                                        <Text style={[styles.metricValue, { color: String(strategy.pnl).startsWith('-') ? '#FF3B15' : '#34C759' }]}>
                                             {strategy.pnl}
                                         </Text>
                                         <Text style={styles.metricLabel}>P&L</Text>

@@ -1,18 +1,41 @@
 import HomeHeader from '@/components/HomeHeader';
-import StrategyInput from '@/components/StrategyInput';
-import { useState } from 'react';
+import OverallAnalysis from '@/components/OverallAnalysis';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
-const BackTesting = () => {
+
+const OverallanalysisResult = () => {
     const [refreshing, setRefreshing] = useState(false);
+    const [analysisData, setAnalysisData] = useState(null);
+    // const [aiInsights, setAiInsights] = useState(null);
+
+
+    useEffect(() => {
+        const fetchOverallAnalysisData = async () => {
+            const savedUser = await AsyncStorage.getItem("userData");
+            const parsedUser = JSON.parse(savedUser);
+            const { _id } = parsedUser;
+            try {
+                const response = await axios.get('https://api.aianalyzer.in/api/appdata/get-chart-analysis', { params: { userid: _id } });
+                setAnalysisData(response.data);
+                console.log(response.data);
+
+            } catch (error) {
+                console.error("Failed to fetch overall analysis data:", error);
+            }
+        };
+
+        fetchOverallAnalysisData();
+    }, []);
+
 
     const components = [
-        { id: '1', component: <StrategyInput /> },
-        // { id: '2', component: <AIGuidance /> },
-        // { id: '3', component: <BacktestingResults /> },
+        { id: '1', component: <OverallAnalysis data={analysisData} /> },
+        // { id: '2', component: <AIMarketInsights data={analysisData} /> },
 
     ];
-
     const renderItem = ({ item }) => (
         <View style={styles.section}>
             {item.component}
@@ -28,7 +51,7 @@ const BackTesting = () => {
     };
     return (
         <View style={styles.container}>
-            <HomeHeader page="home" title="Strategy Backtesting" subtitle="Test your trading strategies with historical data" />
+            <HomeHeader page="Home" title="Overall Analysis Result" subtitle="AI-powered chart pattern recognition and technical analysis" />
 
             <FlatList
                 data={components}
@@ -48,6 +71,8 @@ const BackTesting = () => {
     )
 }
 
+export default OverallanalysisResult;
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -58,5 +83,3 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
 })
-
-export default BackTesting;

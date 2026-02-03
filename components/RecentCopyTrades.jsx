@@ -1,62 +1,34 @@
-import { StyleSheet, Text, View, FlatList } from 'react-native';
-import React from 'react';
-import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
-const RecentCopyTrades = () => {
-    const trades = [
-        {
-            id: '1',
-            stock: 'BTC/USD',
-            cmp: '+$85.30',
-            traderName: 'CryptoKing',
-            type: 'Long',
-            status: 'Open',
-            entry: '$42,150',
-            current: '$42,850',
-            time: '15m ago',
-        },
-        {
-            id: '2',
-            stock: 'ETH/USD',
-            cmp: '-$145.60',
-            traderName: 'AlgoExpert',
-            type: 'Short',
-            status: 'Closed',
-            entry: '$2,680',
-            current: '$2,534',
-            time: '1h ago',
-        },
-        {
-            id: '3',
-            stock: 'BTC/USD',
-            cmp: '+$85.30',
-            traderName: 'CryptoKing',
-            type: 'Long',
-            status: 'Open',
-            entry: '$42,150',
-            current: '$42,850',
-            time: '15m ago',
-        },
-    ];
+const RecentCopyTrades = ({ recentCopyTrades }) => {
+    const [copytrades, setCopyTrades] = useState([]);
+
+    useEffect(() => {
+        if (recentCopyTrades) {
+            setCopyTrades(recentCopyTrades);
+        }
+    }, [recentCopyTrades]);
 
     const renderTradeItem = ({ item }) => (
         <View style={styles.tradeCard}>
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.stockName}>{item.stock}</Text>
+                    <Text style={styles.stockName}>{item.pair}</Text>
                     <Text style={styles.traderName}>by {item.traderName}</Text>
                 </View>
                 <View style={styles.statusCmpContainer}>
                     <Text
                         style={[
                             styles.cmpText,
-                            { color: item.cmp.startsWith('-') ? '#FF3B15' : '#34C759' },
+                            { color: String(item.entryPrice).startsWith('-') ? '#FF3B15' : '#34C759' },
                         ]}
                     >
-                        {item.cmp}
+                        {item.entryPrice}
                     </Text>
-                    <Text style={styles.timestamp}>{item.time}</Text>
+                    <Text style={styles.timestamp}>{item.timeAgo}</Text>
                 </View>
             </View>
             <View style={styles.tradeDetails}>
@@ -85,8 +57,8 @@ const RecentCopyTrades = () => {
                     </Text>
                 </View>
                 <View style={styles.priceContainer}>
-                    <Text style={styles.priceText}>Entry: {item.entry}</Text>
-                    <Text style={styles.priceText}>Current: {item.current}</Text>
+                    <Text style={styles.priceText}>Entry: {item.entryPrice}</Text>
+                    <Text style={styles.priceText}>Current: {item.currentPrice}</Text>
                 </View>
             </View>
         </View>
@@ -112,7 +84,7 @@ const RecentCopyTrades = () => {
                             <Text style={styles.headerText}>Recent Copy Trades</Text>
                         </View>
                         <FlatList
-                            data={trades}
+                            data={copytrades}
                             renderItem={renderTradeItem}
                             keyExtractor={(item) => item.id}
                             showsVerticalScrollIndicator={false}

@@ -1,63 +1,29 @@
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import React from 'react';
+import { Feather, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { Feather, Octicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useContext } from "react";
+import { ConnectionContext } from "../app/context/ConnectionContext";
+
 
 const SupportedBrokers = () => {
+    const { connectionStatus } = useContext(ConnectionContext);
+    console.log("Broker connection:", connectionStatus);
     const brokers = [
-        {
-            icon: 'zap',
-            name: 'Exness',
-            description: 'Ready for auto-trading',
-            commission: '0%',
-            status: 'Connected',
-            connected: true,
-        },
         {
             icon: 'box',
             name: 'Delta Exchange',
             description: 'Crypto derivatives trading',
             commission: '0.005%',
-            status: 'Connect',
-            connected: false,
-        },
-        {
-            icon: 'globe',
-            name: 'Coindex',
-            description: 'Multi-asset trading platform',
-            commission: '0%',
-            status: 'Connect',
-            connected: false,
-        },
-        {
-            icon: 'disc',
-            name: 'Charles Schwab',
-            description: 'Traditional brokerage',
-            commission: '0%',
-            status: 'Connect',
-            connected: false,
-        },
-        {
-            icon: 'bar-chart-2',
-            name: 'Fidelity',
-            description: 'Investment services',
-            commission: '0%',
-            status: 'Connect',
-            connected: false,
-        },
-        {
-            icon: 'arrow-up-circle',
-            name: 'Robinhood',
-            description: 'Commission-free trading',
-            commission: '0%',
-            status: 'Coming Soon',
-            connected: false,
-        },
+            status: 'Connected',
+            connection_status: connectionStatus,
+            apiType: 'DELTA_EXCHANGE',
+        }
     ];
 
-    const handleConnect = (brokerName) => {
-        // Add connect logic here
-        console.log(`Connecting to ${brokerName}`);
+    const handleConnect = (apiType) => {
+        router.push({ pathname: '/brokerapiconnect', params: { apiType } });
+        console.log(`Connecting to ${apiType}`);
     };
 
     return (
@@ -80,12 +46,12 @@ const SupportedBrokers = () => {
                             <Text style={styles.header}>Supported Brokers</Text>
                         </View>
                         {brokers.map((broker, index) => (
-                            <View key={index} style={[styles.brokerCard, { borderColor: (broker.connected ? '#22c55e' : '#2563eb') }]}>
+                            <View key={index} style={[styles.brokerCard, { borderColor: (broker.connection_status ? '#22c55e' : '#2563eb') }]}>
                                 <View style={styles.brokerItem}>
                                     <Feather
                                         name={broker.icon}
                                         size={24}
-                                        color={broker.connected ? '#22c55e' : '#60a5fa'}
+                                        color={broker.connection_status ? '#22c55e' : '#60a5fa'}
                                         style={styles.brokerIcon}
                                     />
                                     <View style={styles.brokerInfo}>
@@ -96,21 +62,21 @@ const SupportedBrokers = () => {
                                             <Text style={styles.brokerCommission}>Commission: {broker.commission}</Text>
                                         </View>
                                     </View>
-                                    {broker.connected ? (
+                                    {broker.connection_status ? (
                                         <TouchableOpacity
-                                            style={[styles.connectButton, { backgroundColor: 'green' }]}
-                                            onPress={() => handleConnect(broker.name)}
+                                            style={[styles.connectButton, { backgroundColor: '#22c55e' }]}
+                                            onPress={() => handleConnect(broker.apiType)}
                                         >
-                                            <Text style={styles.connectedStatus}>{broker.status}</Text>
+                                            <Text style={styles.connectedStatus}>Connected</Text>
                                         </TouchableOpacity>
                                     ) : broker.status === 'Coming Soon' ? (
                                         <Text style={styles.comingSoonStatus}>{broker.status}</Text>
                                     ) : (
                                         <TouchableOpacity
                                             style={styles.connectButton}
-                                            onPress={() => handleConnect(broker.name)}
+                                            onPress={() => handleConnect(broker.apiType)}
                                         >
-                                            <Text style={styles.connectText}>{broker.status}</Text>
+                                            <Text style={styles.connectText}>Connect</Text>
                                         </TouchableOpacity>
                                     )}
                                 </View>
@@ -121,7 +87,6 @@ const SupportedBrokers = () => {
                                     </View>
                                 )}
                             </View>
-
                         ))}
                     </View>
                 </View>

@@ -1,46 +1,40 @@
-import { StyleSheet, Text, View, FlatList } from 'react-native';
-import React from 'react';
-import LinearGradient from 'react-native-linear-gradient';
-import { Feather, Octicons } from '@expo/vector-icons';
 import HomeHeader from '@/components/HomeHeader';
-
+import { useContext } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import { ConnectionContext } from '../context/ConnectionContext';
 const Notifications = () => {
-    const notifications = [
-        {
-            id: '1',
-            message: 'New Bullish pattern detected on BTC/USD (4H)',
-            status: '✅',
-            time: '06:45 PM IST, Aug 01, 2025',
-        },
-        {
-            id: '2',
-            message: 'High volatility alert for ETH/USD (1H)',
-            status: '🟡',
-            time: '06:30 PM IST, Aug 01, 2025',
-        },
-        {
-            id: '3',
-            message: 'Order Block confirmed on SOL/USD (15M)',
-            status: '✅',
-            time: '06:15 PM IST, Aug 01, 2025',
-        },
-        {
-            id: '4',
-            message: 'Bearish signal on MATIC/USD (30M)',
-            status: '❌',
-            time: '06:00 PM IST, Aug 01, 2025',
-        },
-    ];
+    const { notifications } = useContext(ConnectionContext);
+
+    const formatDate = (isoString) => {
+        if (!isoString) return "";
+        const date = new Date(isoString);
+
+        const options = {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+            hour12: true,
+        };
+
+        return date.toLocaleString("en-GB", options).replace(",", "");
+    };
 
     const renderItem = ({ item }) => (
         <View style={styles.notificationItem}>
             <View style={styles.notificationHeader}>
                 <Text style={styles.messageText}>{item.message}</Text>
-                <Text style={[styles.status, getStatusStyle(item.status)]}>{item.status}</Text>
+                <Text style={[styles.status, getStatusStyle(item.status)]}>
+                    {item.status}
+                </Text>
             </View>
-            <Text style={styles.timeText}>{item.time}</Text>
+            <Text style={styles.timeText}>{formatDate(item.createdAt)}</Text>
         </View>
     );
+
+
 
     return (
         <View style={styles.container}>
@@ -58,12 +52,13 @@ const Notifications = () => {
                     style={styles.innerGradient}
                 >
                     <FlatList
-                        data={notifications}
+                        data={notifications.data}
                         renderItem={renderItem}
-                        keyExtractor={(item) => item.id}
+                        keyExtractor={(item) => item._id?.toString()}
                         contentContainerStyle={styles.content}
                         showsVerticalScrollIndicator={false}
                     />
+
                 </LinearGradient>
             </LinearGradient>
         </View>
@@ -72,9 +67,8 @@ const Notifications = () => {
 
 // Helper function to determine status style
 const getStatusStyle = (status) => {
-    if (status === '✅') return styles.bullish;
-    if (status === '❌') return styles.bearish;
-    if (status === '🟡') return styles.neutral;
+    if (status === 'read') return styles.bullish;
+    if (status === 'unread') return styles.neutral;
     return {};
 };
 
@@ -139,15 +133,19 @@ const styles = StyleSheet.create({
         backgroundColor: '#22c55e22',
         borderColor: '#22c55e',
         color: '#22c55e',
-    },
-    bearish: {
-        backgroundColor: '#ef444422',
-        borderColor: '#ef4444',
-        color: '#ef4444',
+        borderWidth: 1,
     },
     neutral: {
         backgroundColor: '#f59e0b22',
         borderColor: '#f59e0b',
         color: '#f59e0b',
+        borderWidth: 1,
     },
+    bearish: {
+        backgroundColor: '#ef444422',
+        borderColor: '#ef4444',
+        color: '#ef4444',
+        borderWidth: 1,
+    },
+
 });

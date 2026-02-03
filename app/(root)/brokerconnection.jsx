@@ -1,16 +1,16 @@
-import { StyleSheet, View, FlatList, RefreshControl, Text } from 'react-native';
-import React, { useState } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import ReferralAccess from '@/components/ReferralAccess';
-import APIConfiguration from '@/components/APIConfiguration';
 import SupportedBrokers from '@/components/SupportedBrokers';
+import { useContext, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { ConnectionContext } from "../context/ConnectionContext";
 
 const BrokerConnection = () => {
+    const { referralData } = useContext(ConnectionContext);
     const [refreshing, setRefreshing] = useState(false);
-
     const components = [
-        { id: '1', component: <ReferralAccess /> },
-        { id: '2', component: <APIConfiguration /> },
+        { id: '1', component: <ReferralAccess referralData={referralData} /> },
+        // { id: '2', component: <APIConfiguration /> },
         { id: '3', component: <SupportedBrokers /> },
 
     ];

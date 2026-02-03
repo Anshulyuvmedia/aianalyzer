@@ -1,19 +1,47 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
-import LinearGradient from 'react-native-linear-gradient';
-import { Picker } from '@react-native-picker/picker'; // Ensure this package is installed
+
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from '@react-native-picker/picker'; // Ensure this package is installed
+import axios from "axios";
+import { useRouter } from "expo-router";
+import { useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
 const SelectTradingPairs = () => {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState('Forex');
     const [analysisType, setAnalysisType] = useState('Swing');
     const [selectedPairs, setSelectedPairs] = useState([]);
     const [timeframe, setTimeframe] = useState('1H');
+    const [analysisData, setAnalysisData] = useState(null);
+    const [loading, setLoading] = useState(false);
+
 
     const tabs = {
-        Forex: ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD', 'EURJPY', 'GBPJPY', 'EURGBP', 'AUDJPY', 'EURAUD', 'EURCHF', 'AUDCAD', 'GBPCHF', 'NZDJPY', 'CADCHF', 'GBPAUD'],
-        Commodities: ['XAUUSD', 'XAGUSD', 'USOIL', 'UKOIL', 'NATGAS', 'COPPER', 'PLATINUM', 'PALLADIUM', 'WHEAT', 'CORN', 'SOYBEANS', 'SUGAR', 'COFFEE', 'COCOA', 'COTTON', 'LUMBER'],
-        Crypto: ['BTCUSD', 'ETHUSD', 'ADAUSD', 'SOLUSD', 'DOTUSD', 'LINKUSD', 'MATICUSD', 'AVAXUSD', 'UNIUSD', 'LTCUSD', 'BCHUSD', 'XLMUSD', 'XRPUSD', 'ALGOUSD', 'ATOMUSD', 'FILUSD', 'MANAUSD', 'SANDUSD'],
+        Forex: [
+            // Major Pairs
+            "EURUSD", "GBPUSD", "USDJPY", "USDCHF",
+            "USDCAD", "AUDUSD", "NZDUSD", "EURGBP",
+            // Minor Pairs
+            "EURJPY", "GBPJPY", "EURCHF", "AUDJPY",
+            "CADJPY", "NZDJPY", "EURAUD", "EURNZD",
+            "GBPCAD", "GBPAUD", "AUDCAD", "AUDCHF",
+            "CADCHF", "CHFJPY"
+        ],
+        Commodities: [
+            "XAUUSD",  // Gold
+            "XAGUSD",  // Silver
+            "USOIL",   // WTI Crude
+            "UKOIL",   // Brent Crude
+            "NGUSD"    // Natural Gas
+        ],
+        Crypto: [
+            "BTCUSD", "ETHUSD",
+            "BNBUSD", "XRPUSD",
+            "ADAUSD", "SOLUSD",
+            "DOTUSD", "LTCUSD"
+        ]
     };
 
     const handleTogglePair = (pair) => {
@@ -30,8 +58,46 @@ const SelectTradingPairs = () => {
         setSelectedPairs([]);
     };
 
-    const handleAnalyzeChart = () => {
-        console.log('Analyzing chart for:', { selectedPairs, timeframe, activeTab, analysisType });
+    const handleAnalyzeChart = async () => {
+
+        if (!selectedPairs || selectedPairs.length === 0) {
+            Alert.alert("Error", "Please select at least one trading pair");
+            return;
+        }
+        setLoading(true);
+        const savedUser = await AsyncStorage.getItem("userData");
+        const { _id } = JSON.parse(savedUser);
+
+        try {
+            const response = await axios.post("https://api.aianalyzer.in/api/appdata/chart-analysis", {
+                activeTab,
+                selectedPairs,
+                analysisType,
+                timeframe,
+                userId: _id,
+            });
+            // console.log("Analysis Response:", JSON.stringify(response.data, null, 3));
+
+            setAnalysisData(response.data.overallAnalysis);
+
+            // ✅ Reset Form After Success
+            setSelectedPairs([]);
+            setActiveTab("Forex");
+            setAnalysisType("Swing");
+            setTimeframe("1H");
+            console.log("Form Reset Done!");
+            router.push('../OverallanalysisResult');
+
+        } catch (error) {
+            console.log("Analysis Fetch Error:", error);
+            Alert.alert("Error", error?.response?.data?.message || "Something went wrong!");
+        } finally {
+            setLoading(false); // Stop Loader
+        }
+    };
+
+    const handleViewAllAnalysis = () => {
+        router.push('../OverallanalysisResult');
     };
 
     return (
@@ -137,12 +203,24 @@ const SelectTradingPairs = () => {
                                     </Picker>
                                 </View>
                             </View>
-                            <TouchableOpacity style={styles.analyzeButton} onPress={handleAnalyzeChart}>
-                                <Text style={styles.analyzeText}>Analyze Chart</Text>
+                            <TouchableOpacity
+                                style={[styles.analyzeButton, loading && { opacity: 0.7 }]}
+                                onPress={handleAnalyzeChart}
+                                disabled={loading} // disable when loading
+                            >
+                                {loading ? (
+                                    <ActivityIndicator size="small" color="#fff" />
+                                ) : (
+                                    <Text style={styles.analyzeText}>Analyze Chart</Text>
+                                )}
                             </TouchableOpacity>
+
                         </View>
                     </View>
                 </View>
+                <TouchableOpacity onPress={handleViewAllAnalysis}>
+                    <Text style={styles.viewAllAnalysisText}>View all analysis</Text>
+                </TouchableOpacity>
             </LinearGradient>
         </LinearGradient>
     );
@@ -279,7 +357,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#4B5563',
         marginLeft: 10,
-        flex: 1/2,
+        flex: 1 / 2,
     },
     picker: {
         color: '#fff',
@@ -301,4 +379,12 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 15,
     },
+    viewAllAnalysisText: {
+        color: '#A0AEC0',
+        fontSize: 16,
+        fontWeight: '400',
+        textAlign: 'center',
+        textDecorationLine: 'underline',
+        marginTop: 15,
+    }
 });

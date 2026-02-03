@@ -1,21 +1,29 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Animated, Alert, Image } from 'react-native';
-import React, { useState, useEffect, useRef } from 'react';
-import LinearGradient from 'react-native-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+//अक्रम अखंड आकाशीय परिणाम परीक्षम प्रस्थानम्
+//अनन्त और आकाश-समान अटूट परिणामों की परीक्षा ही जीवन का रास्ता है
 import images from '@/constants/images';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from "axios";
+import { router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import RBSheet from "react-native-raw-bottom-sheet";
+
 
 const Login = () => {
-    const DUMMY_EMAIL = 'user@example.com';
-    const DUMMY_PASSWORD = 'password123';
-    const [email, setEmail] = useState(DUMMY_EMAIL);
-    const [password, setPassword] = useState(DUMMY_PASSWORD);
-    const [emailError, setEmailError] = useState('');
-    const [passwordError, setPasswordError] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
+    const [apiData, setapiData] = useState('');
+    const [phoneNumber, setphoneNumber] = useState("");
+    const [phoneError, setPhoneError] = useState("");
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const [timer, setTimer] = useState(30);
+    const [isTimerActive, setIsTimerActive] = useState(false);
+    const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
+    const otpRefs = useRef([]);
     const buttonScaleAnim = useRef(new Animated.Value(1)).current;
+    const otpSheetRef = useRef(null);
+    const [loadingVerify, setLoadingVerify] = useState(false);
+    const [otp,setOtp] = useState("");
 
     // Fade-in animation
     useEffect(() => {
@@ -51,47 +59,131 @@ const Login = () => {
         return emailRegex.test(email);
     };
 
-    // Save session to AsyncStorage
-    const saveSession = async (email) => {
-        try {
-            const token = 'dummy-token-' + Math.random().toString(36).slice(2);
-            const userData = { id: 'user-' + email, email };
-            await AsyncStorage.setItem('userToken', token);
-            await AsyncStorage.setItem('userData', JSON.stringify(userData));
-            await AsyncStorage.setItem('lastRoute', '(root)/(tabs)');
-        } catch (error) {
-            console.error('Error saving session:', error);
-            Alert.alert('Error', 'Failed to save session. Please try again.');
+    // OTP Input Change Handler
+    const handleOtpChange = (val, index) => {
+        if (/^\d?$/.test(val)) {
+            const arr = [...otpArray];
+            arr[index] = val;
+            setOtpArray(arr);
+
+            if (val !== "" && index < 5) {
+                otpRefs.current[index + 1].focus();
+            }
         }
     };
+
+    // OTP Timer
+    useEffect(() => {
+        let interval;
+        if (isTimerActive && timer > 0) {
+            interval = setInterval(() => setTimer((t) => t - 1), 1000);
+        } else if (timer === 0) {
+            setIsTimerActive(false);
+        }
+        return () => clearInterval(interval);
+    }, [isTimerActive, timer]);
+
+    const validatePhone = (num) => /^[6-9]\d{9}$/.test(num);
+
 
     // Handle login submission
     const handleLogin = async () => {
         let valid = true;
-        setEmailError('');
-        setPasswordError('');
+        setPhoneError('');
 
-        if (!email) {
-            setEmailError('Email is required');
+        if (!phoneNumber) {
+            setPhoneError("Phone number is required");
             valid = false;
-        } else if (!validateEmail(email)) {
-            setEmailError('Please enter a valid email');
+        } else if (!validatePhone(phoneNumber)) {
+            setPhoneError("Enter a valid Indian phone number");
             valid = false;
         }
+        if (!valid) return;
 
-        if (!password) {
-            setPasswordError('Password is required');
-            valid = false;
-        } else if (password.length < 6) {
-            setPasswordError('Password must be at least 6 characters');
-            valid = false;
+        try {
+            const res = await axios.post("https://api.aianalyzer.in/api/generateOtp", {
+                phoneNumber,
+            });
+
+            console.log(res.data);
+            if (res.data.status) {
+                setTimer(30);
+                setIsTimerActive(true);
+                otpSheetRef.current.open();
+            } else {
+                Alert.alert("Error", res.data.message || "Login failed");
+            }
+
+        } catch (error) {
+            console.log("Login Error:", error);
+            // If backend sent a JSON response
+            if (error.response) {
+                const status = error.response.status;
+                const msg = error.response.data.msg || error.response.data.message;
+
+                if (status === 400) {
+                    Alert.alert("Phone Number is required", msg);
+                }
+                else if (status === 404) {
+                    Alert.alert("Already exits.!", msg);
+                }
+                else if (status === 500) {
+                    Alert.alert("Server Error", "Something went wrong on server.");
+                }
+                else {
+                    Alert.alert("Error", msg || "Login failed");
+                }
+            }
+            else {
+                // Network or unexpected error
+                Alert.alert("Network Error", "Unable to reach the server.");
+            }
         }
+    };
 
-        if (valid && email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
-            await saveSession(email);
-            router.replace('/(root)/(tabs)');
-        } else if (valid) {
-            Alert.alert('Error', 'Invalid email or password. Please use the credentials shown above.');
+    // Verify OTP API
+    const handleVerifyOTP = async () => {
+        const finalOtp = otpArray.join("");
+
+        if (finalOtp.length !== 6) {
+            Alert.alert("Invalid OTP", "Please enter the complete 6-digit OTP");
+            return;
+        }
+        try {
+            setLoadingVerify(true); // start loading
+
+            const res = await axios.post("https://api.aianalyzer.in/api/verifyOtp", {
+                phoneNumber: phoneNumber,
+                otp: finalOtp,
+            });
+            console.log(res.data);
+            setLoadingVerify(false); // stop loading
+
+            if (res.data.status === true) {
+
+                // 👉 Save user data to AsyncStorage
+                await AsyncStorage.setItem(
+                    'userData',
+                    JSON.stringify(res.data.userdata)
+                );
+                setOtp(res.data.otp);
+                console.log("User saved into AsyncStorage");
+
+
+                setapiData(res.data.userdata);
+                otpSheetRef.current.close();
+                console.log("Redirecting to......../(root)/(tabs)");
+                router.replace('/(root)/(tabs)');
+            } else {
+                Alert.alert("Error", res.data.msg || "Invalid OTP");
+            }
+
+        } catch (error) {
+            setLoadingVerify(false); // stop loading
+            Alert.alert(
+                "Error",
+                error?.response?.data?.msg || "OTP verification failed"
+            );
         }
     };
 
@@ -121,65 +213,25 @@ const Login = () => {
                         Demo Credentials:
                     </Text>
                     <Text style={styles.credentialsText}>
-                        Email: {DUMMY_EMAIL}
-                    </Text>
-                    <Text style={styles.credentialsText}>
-                        Password: {DUMMY_PASSWORD}
+                        Mobile No: 9876543210
                     </Text>
                 </View>
 
                 <View style={styles.inputContainer}>
                     <View style={styles.inputWrapper}>
-                        <Ionicons
-                            name="mail-outline"
-                            size={20}
-                            color="#9CA3AF"
-                            style={styles.inputIcon}
-                        />
+                        <Ionicons name="call-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
                         <TextInput
                             style={[styles.input, styles.inputWithIcon]}
-                            placeholder="Email"
+                            placeholder="Phone Number"
                             placeholderTextColor="#6B7280"
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
+                            value={phoneNumber}
+                            onChangeText={(val) => setphoneNumber(val.replace(/[^0-9]/g, ""))}
+                            keyboardType="numeric"
+                            maxLength={10}
                         />
                     </View>
-                    {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+                    {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
                 </View>
-
-                <View style={styles.inputContainer}>
-                    <View style={styles.inputWrapper}>
-                        <Ionicons
-                            name="lock-closed-outline"
-                            size={20}
-                            color="#9CA3AF"
-                            style={styles.inputIcon}
-                        />
-                        <TextInput
-                            style={[styles.input, styles.inputWithIcon, styles.passwordInput]}
-                            placeholder="Password"
-                            placeholderTextColor="#6B7280"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry={!showPassword}
-                            autoCapitalize="none"
-                        />
-                        <TouchableOpacity
-                            style={styles.eyeIcon}
-                            onPress={() => setShowPassword(!showPassword)}
-                        >
-                            <Ionicons
-                                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                                size={20}
-                                color="#9CA3AF"
-                            />
-                        </TouchableOpacity>
-                    </View>
-                    {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-                </View>
-
                 <TouchableOpacity
                     activeOpacity={0.9}
                     onPressIn={handleButtonPressIn}
@@ -203,6 +255,58 @@ const Login = () => {
                     </Text>
                 </TouchableOpacity>
             </Animated.View>
+            <RBSheet
+                ref={otpSheetRef}
+                height={300}
+                closeOnDragDown={false}
+                openDuration={250}
+                customStyles={{ container: styles.sheet }}
+            >
+                <Text style={styles.otpTitle}>Enter OTP : {otp}</Text>
+                <Text style={styles.otpSubtitle}>A 6-digit code has been sent to {phoneNumber}</Text>
+
+                {/* ---- NEW 6 BOX OTP UI ---- */}
+                <View style={styles.otpBoxContainer}>
+                    {otpArray.map((digit, index) => (
+                        <TextInput
+                            key={index}
+                            ref={(ref) => (otpRefs.current[index] = ref)}
+                            style={styles.otpBox}
+                            maxLength={1}
+                            keyboardType="numeric"
+                            value={digit}
+                            onChangeText={(val) => handleOtpChange(val, index)}
+                            onKeyPress={(e) => handleKeyPress(e, index)}
+                        />
+                    ))}
+                </View>
+
+                <TouchableOpacity
+                    style={styles.verifyBtn}
+                    disabled={loadingVerify}
+                    onPress={handleVerifyOTP}
+                >
+                    {loadingVerify ? (
+                        <Text style={styles.verifyText}>Verifying...</Text>
+                    ) : (
+                        <Text style={styles.verifyText}>Verify OTP</Text>
+                    )}
+                </TouchableOpacity>
+
+
+                {isTimerActive ? (
+                    <Text style={styles.timerText}>Resend OTP in {timer}s</Text>
+                ) : (
+                    <TouchableOpacity
+                        onPress={() => {
+                            setTimer(30);
+                            setIsTimerActive(true);
+                        }}
+                    >
+                        <Text style={styles.resendText}>Resend OTP</Text>
+                    </TouchableOpacity>
+                )}
+            </RBSheet>
         </LinearGradient>
     );
 };
@@ -337,4 +441,74 @@ const styles = StyleSheet.create({
         color: '#10B981',
         fontWeight: '600',
     },
+    sheet: {
+        backgroundColor: "#1F2937",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 20,
+        elevation: 20,
+    },
+
+    otpTitle: {
+        fontSize: 22,
+        fontWeight: "700",
+        color: "#FFFFFF",
+        textAlign: "center",
+        marginTop: 10,
+    },
+
+    otpSubtitle: {
+        fontSize: 14,
+        color: "#9CA3AF",
+        textAlign: "center",
+        marginVertical: 10,
+    },
+
+    verifyBtn: {
+        backgroundColor: "#10B981",
+        paddingVertical: 14,
+        borderRadius: 12,
+        marginTop: 20,
+        alignItems: "center",
+    },
+
+    verifyText: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#FFFFFF",
+    },
+
+    timerText: {
+        textAlign: "center",
+        marginTop: 15,
+        color: "#9CA3AF",
+        fontSize: 14,
+    },
+
+    resendText: {
+        textAlign: "center",
+        marginTop: 15,
+        color: "#10B981",
+        fontSize: 14,
+        fontWeight: "600",
+    },
+    otpBoxContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginTop: 25,
+        paddingHorizontal: 10,
+    },
+
+    otpBox: {
+        width: 42,
+        height: 50,
+        backgroundColor: "#2D3748",
+        borderRadius: 10,
+        textAlign: "center",
+        fontSize: 20,
+        color: "#fff",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.2)",
+    },
+
 });
