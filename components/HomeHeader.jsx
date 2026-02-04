@@ -90,7 +90,8 @@ export default HomeHeader;
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 10,
+        marginHorizontal: 10,
+        paddingBottom: 10,
     },
     header: {
         flexDirection: 'row',

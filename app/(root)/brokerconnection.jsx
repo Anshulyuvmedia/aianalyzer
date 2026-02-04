@@ -3,10 +3,10 @@ import ReferralAccess from '@/components/ReferralAccess';
 import SupportedBrokers from '@/components/SupportedBrokers';
 import { useContext, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { ConnectionContext } from "../context/ConnectionContext";
+import { ReferralsContext } from "@/context/ReferralsContext";
 
 const BrokerConnection = () => {
-    const { referralData } = useContext(ConnectionContext);
+    const { referralData } = useContext(ReferralsContext);
     const [refreshing, setRefreshing] = useState(false);
     const components = [
         { id: '1', component: <ReferralAccess referralData={referralData} /> },

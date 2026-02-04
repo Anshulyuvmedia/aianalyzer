@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { API_BASE_URL } from "@/config/api";
 
 
 const OverallanalysisResult = () => {
@@ -18,7 +19,7 @@ const OverallanalysisResult = () => {
             const parsedUser = JSON.parse(savedUser);
             const { _id } = parsedUser;
             try {
-                const response = await axios.get('https://api.aianalyzer.in/api/appdata/get-chart-analysis', { params: { userid: _id } });
+                const response = await axios.get(`${API_BASE_URL}/api/appdata/get-chart-analysis`, { params: { userid: _id } });
                 setAnalysisData(response.data);
                 console.log(response.data);
 

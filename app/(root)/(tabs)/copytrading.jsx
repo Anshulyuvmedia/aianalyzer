@@ -4,11 +4,11 @@ import RecentCopyTrades from '@/components/RecentCopyTrades';
 import TopTraders from '@/components/TopTraders';
 import { useContext, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { ConnectionContext } from "../../context/ConnectionContext";
+import { CopyTradingContext } from "@/context/CopyTradingContext";
 
 
 const CopyTrading = () => {
-    const { copytradingData } = useContext(ConnectionContext);
+    const { copytradingData } = useContext(CopyTradingContext);
     const copystats = copytradingData?.copystats;
     const topTraders = copytradingData?.topTraders;
     const recentCopyTrades = copytradingData?.recentCopyTrades;

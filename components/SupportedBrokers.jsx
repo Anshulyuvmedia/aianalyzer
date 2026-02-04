@@ -3,12 +3,12 @@ import { router } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useContext } from "react";
-import { ConnectionContext } from "../app/context/ConnectionContext";
+import { BrokerContext } from "@/context/BrokerContext";
 
 
 const SupportedBrokers = () => {
-    const { connectionStatus } = useContext(ConnectionContext);
-    console.log("Broker connection:", connectionStatus);
+    const { isConnected } = useContext(BrokerContext);
+    console.log("Broker connection:", isConnected);
     const brokers = [
         {
             icon: 'box',
@@ -16,7 +16,7 @@ const SupportedBrokers = () => {
             description: 'Crypto derivatives trading',
             commission: '0.005%',
             status: 'Connected',
-            connection_status: connectionStatus,
+            connection_status: isConnected,
             apiType: 'DELTA_EXCHANGE',
         }
     ];

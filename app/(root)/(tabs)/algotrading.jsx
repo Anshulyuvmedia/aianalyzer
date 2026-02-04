@@ -5,14 +5,15 @@ import IndexCard from '@/components/IndexCard';
 import RecentTrades from '@/components/RecentTrades';
 import { useContext, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { ConnectionContext } from "../../context/ConnectionContext";
+import { AlgoTradingContext } from "@/context/AlgoTradingContext";
+
 const AlgoTrading = () => {
-    const { dashboardData, loadingDashboard, loadingAlgotrading, algotradingData } = useContext(ConnectionContext);
-    const rawDashboard = dashboardData?.dashboardData;
-    const recentTrades = rawDashboard?.recentTrades;
+    const { loadingDashboard, loadingAlgotrading, algotradingData } = useContext(AlgoTradingContext);
+
     const summary = algotradingData?.summary;
     const aitrading = algotradingData?.aiTrading;
     const activeStrategies = algotradingData?.activeStrategies;
+    const recentTrades = algotradingData?.recentTrades;
 
     const [data, setData] = useState({
         dashboardMetrics: []
@@ -91,6 +92,7 @@ const AlgoTrading = () => {
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.section}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
@@ -108,10 +110,10 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
-        padding: 10,
+        paddingHorizontal: 10,
     },
     section: {
-        marginBottom: 10,
+        marginTop: 10,
     },
 });
 

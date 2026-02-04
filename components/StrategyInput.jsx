@@ -7,7 +7,7 @@ import { useRouter } from "expo-router";
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-
+import { API_BASE_URL } from "@/config/api";
 
 const StrategyInput = () => {
     const router = useRouter();
@@ -136,7 +136,7 @@ const StrategyInput = () => {
             // console.log("Submitting backtest with FormData:", JSON.stringify(formDataEntries,null,3));
 
             const response = await axios.post(
-                "https://api.aianalyzer.in/api/appdata/run-backtest",
+                `${API_BASE_URL}/api/appdata/run-backtest`,
                 formData,
                 {
                     headers: {

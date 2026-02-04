@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import RBSheet from "react-native-raw-bottom-sheet";
+import { API_BASE_URL } from "@/config/api";
 
 const Register = () => {
     const [apiData, setapiData] = useState('');
@@ -91,7 +92,7 @@ const Register = () => {
         if (!valid) return;
 
         try {
-            const res = await axios.post("https://api.aianalyzer.in/api/register", {
+            const res = await axios.post(`${API_BASE_URL}/api/register`, {
                 name,
                 phoneNumber,
                 email
@@ -164,7 +165,7 @@ const Register = () => {
         try {
             setLoadingVerify(true); // start loading
 
-            const res = await axios.post("https://api.aianalyzer.in/api/verifyOtp", {
+            const res = await axios.post(`${API_BASE_URL}/api/verifyOtp`, {
                 phoneNumber: phoneNumber,
                 otp: finalOtp,
             });

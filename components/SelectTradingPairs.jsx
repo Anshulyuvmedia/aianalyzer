@@ -7,6 +7,7 @@ import { useRouter } from "expo-router";
 import { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { API_BASE_URL } from "@/config/api";
 
 const SelectTradingPairs = () => {
     const router = useRouter();
@@ -69,7 +70,7 @@ const SelectTradingPairs = () => {
         const { _id } = JSON.parse(savedUser);
 
         try {
-            const response = await axios.post("https://api.aianalyzer.in/api/appdata/chart-analysis", {
+            const response = await axios.post(`${API_BASE_URL}/api/appdata/chart-analysis`, {
                 activeTab,
                 selectedPairs,
                 analysisType,

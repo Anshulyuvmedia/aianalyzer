@@ -3,16 +3,34 @@ import { StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 const RecentTrades = ({ data }) => {
-    const trades = data || [];
+    const trades = Array.isArray(data) ? data : [];
 
-    // Map API fields to UI fields
-    const mappedTrades = trades.map(trade => ({
-        pair: trade.symbol,
-        direction: trade.side,
-        timeAgo: new Date(trade.time).toLocaleString(),
-        percent: ((trade.fee / trade.notional) * 100).toFixed(2),
-        entry: trade.price,
-        exit: trade.price,
+    // Simple relative time helper
+    const getTimeAgo = (isoString) => {
+        if (!isoString) return '—';
+        const date = new Date(isoString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMin = Math.floor(diffMs / 60000);
+
+        if (diffMin < 1) return 'just now';
+        if (diffMin < 60) return `${diffMin}m ago`;
+        const diffHr = Math.floor(diffMin / 60);
+        if (diffHr < 24) return `${diffHr}h ago`;
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    // We'll show — for % and exit until you have closed positions
+    const mappedTrades = trades.map((trade) => ({
+        pair: trade.symbol || '—',
+        direction: trade.side?.toLowerCase() || '—',
+        timeAgo: getTimeAgo(trade.time),
+        // For real PnL % you need exit price / average entry + fees
+        // Until then: show fee % or — (most apps hide or show 0%)
+        percent: '—', // or calculate fee % if you want: ((trade.fee / trade.notional) * 100).toFixed(2)
+        entry: trade.price?.toFixed(2) || '—',
+        exit: '—', // change this when you have exit data
+        isBuy: trade.side?.toLowerCase() === 'buy',
     }));
 
     return (
@@ -29,55 +47,57 @@ const RecentTrades = ({ data }) => {
                 style={styles.innerGradient}
             >
                 <View style={styles.container}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                        <Ionicons name="analytics-outline" size={24} color="green" />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                        <Ionicons name="analytics-outline" size={24} color="#10b981" />
                         <Text style={styles.header}>Recent Trades</Text>
                     </View>
 
-                    {mappedTrades.map((trade, index) => (
-                        <View key={index} style={styles.tradeItem}>
-                            <View style={styles.tradeInfo}>
-                                <Text style={styles.pair}>{trade.pair}</Text>
-                                <Text
-                                    style={[
-                                        styles.tradeDetails,
-                                        trade.direction === 'sell' ? styles.sell : styles.buy,
-                                    ]}
-                                >
-                                    {trade.direction} • {trade.timeAgo}
-                                </Text>
+                    {mappedTrades.length === 0 ? (
+                        <Text style={styles.emptyText}>No recent trades yet</Text>
+                    ) : (
+                        mappedTrades.map((trade, index) => (
+                            <View key={index} style={styles.tradeItem}>
+                                <View style={styles.tradeInfo}>
+                                    <Text style={styles.pair}>{trade.pair}</Text>
+                                    <Text
+                                        style={[
+                                            styles.tradeDetails,
+                                            trade.isBuy ? styles.buy : styles.sell,
+                                        ]}
+                                    >
+                                        {trade.direction.toUpperCase()} • {trade.timeAgo}
+                                    </Text>
+                                </View>
 
+                                <View style={styles.priceContainer}>
+                                    <Text
+                                        style={[
+                                            styles.change,
+                                            trade.percent === '—'
+                                                ? styles.neutral
+                                                : trade.percent >= 0
+                                                    ? styles.positive
+                                                    : styles.negative,
+                                        ]}
+                                    >
+                                        {trade.percent === '—' ? '—' : trade.percent >= 0 ? `+${trade.percent}%` : trade.percent}
+                                    </Text>
+                                    <Text style={styles.priceRange}>
+                                        {trade.entry} → {trade.exit}
+                                    </Text>
+                                </View>
                             </View>
-
-                            <View style={styles.priceContainer}>
-                                <Text
-                                    style={[
-                                        styles.change,
-                                        trade.percent >= 0 ? styles.positive : styles.negative,
-                                    ]}
-                                >
-                                    {trade.percent >= 0 ? `+${trade.percent}%` : `${trade.percent}%`}
-                                </Text>
-                                <Text style={styles.priceRange}>
-                                    {trade.entry} → {trade.exit}
-                                </Text>
-                            </View>
-                        </View>
-                    ))}
+                        ))
+                    )}
                 </View>
             </LinearGradient>
         </LinearGradient>
     );
 };
 
-
 export default RecentTrades;
 
 const styles = StyleSheet.create({
-    container: {
-        borderRadius: 8,
-        marginVertical: 10,
-    },
     gradientBoxBorder: {
         borderRadius: 15,
         padding: 1,
@@ -86,69 +106,73 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         padding: 15,
     },
+    container: {
+        borderRadius: 8,
+    },
     header: {
         color: '#fff',
         fontSize: 20,
         fontWeight: '800',
-        marginStart: 5,
+        marginLeft: 8,
     },
     tradeItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        backgroundColor: '#131b2a',
         alignItems: 'center',
-        padding: 10,
-        marginBottom: 8,
+        backgroundColor: '#131b2a',
+        padding: 12,
+        marginBottom: 10,
         borderRadius: 10,
         borderWidth: 1,
         borderColor: '#2D3748',
     },
     tradeInfo: {
-        flexDirection: 'column',
+        flex: 1,
     },
     pair: {
         color: '#FFFFFF',
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     tradeDetails: {
         color: '#9CA3AF',
         fontSize: 13,
-        marginTop: 2,
+        marginTop: 4,
+        fontWeight: '500',
     },
     priceContainer: {
-        flexDirection: 'column',
         alignItems: 'flex-end',
     },
     priceRange: {
-        color: '#FFFFFF',
+        color: '#D1D5DB',
         fontSize: 14,
+        marginTop: 4,
     },
     change: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '700',
-        marginBottom: 2,
     },
     positive: {
-        color: '#34C759',
+        color: '#10b981', // green
     },
     negative: {
-        color: '#FF3B30',
+        color: '#ef4444', // red
     },
-    tradeDetails: {
-        fontSize: 13,
-        marginTop: 2,
-        color: '#9CA3AF', // default fallback
+    neutral: {
+        color: '#9CA3AF',
     },
-
-    sell: {
-        color: '#34C759', // green
-        fontWeight: '700',
-    },
-
     buy: {
-        color: '#FF3B30', // red
+        color: '#10b981', // green for BUY
         fontWeight: '700',
     },
-
+    sell: {
+        color: '#ef4444', // red for SELL
+        fontWeight: '700',
+    },
+    emptyText: {
+        color: '#9CA3AF',
+        fontSize: 15,
+        textAlign: 'center',
+        paddingVertical: 20,
+    },
 });

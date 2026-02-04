@@ -1,5 +1,6 @@
 // app/_layout.jsx
 import { useFonts } from 'expo-font';
+import './globals.css';
 import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -7,8 +8,13 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ConnectionProvider } from "./context/ConnectionContext";
-import './globals.css';
+import { NotificationsProvider } from '@/context/NotificationsContext';
+import { ReferralsProvider } from '@/context/ReferralsContext';
+import { CopyTradingProvider } from '@/context/CopyTradingContext';
+import { AlgoTradingProvider } from '@/context/AlgoTradingContext';
+import { DashboardProvider } from '@/context/DashboardContext';
+import { AuthProvider } from '@/context/AuthContext';
+import { BrokerProvider } from '@/context/BrokerContext';
 
 // Prevent the splash screen from hiding until fonts are loaded
 SplashScreen.preventAutoHideAsync();
@@ -65,32 +71,44 @@ function SafeAreaViewWrapper({ statusBarColor }) {
             }}
             edges={['top', 'left', 'right']} // Exclude bottom edge to manually handle insets.bottom
         >
-            <ConnectionProvider>
-                {/* View to simulate the status bar background */}
-                <View
-                    style={{
-                        height: insets.top,
-                        backgroundColor: statusBarColor,
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                    }}
-                />
-                <StatusBar style="light" />
-                <Stack
-                    screenOptions={{
-                        headerShown: false,
-                        contentStyle: {
-                            backgroundColor: '#000',
-                            paddingBottom: insets.bottom, // Ensure Stack content respects bottom inset
-                        },
-                    }}
-                >
-                    <Stack.Screen name="(root)" options={{ headerShown: false }} />
-                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                </Stack>
-            </ConnectionProvider>
+            <AuthProvider>
+                <BrokerProvider>
+                    <DashboardProvider>
+                        <AlgoTradingProvider>
+                            <CopyTradingProvider>
+                                <NotificationsProvider>
+                                    <ReferralsProvider>
+                                        {/* View to simulate the status bar background */}
+                                        <View
+                                            style={{
+                                                height: insets.top,
+                                                backgroundColor: statusBarColor,
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                            }}
+                                        />
+                                        <StatusBar style="light" />
+                                        <Stack
+                                            screenOptions={{
+                                                headerShown: false,
+                                                contentStyle: {
+                                                    backgroundColor: '#000',
+                                                    paddingBottom: insets.bottom, // Ensure Stack content respects bottom inset
+                                                },
+                                            }}
+                                        >
+                                            <Stack.Screen name="(root)" options={{ headerShown: false }} />
+                                            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                                        </Stack>
+                                    </ReferralsProvider>
+                                </NotificationsProvider>
+                            </CopyTradingProvider>
+                        </AlgoTradingProvider>
+                    </DashboardProvider>
+                </BrokerProvider>
+            </AuthProvider>
         </SafeAreaView>
     );
 }

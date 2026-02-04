@@ -13,12 +13,12 @@ import {
   View,
 } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import { ConnectionContext } from "../app/context/ConnectionContext";
+import { BrokerContext } from "@/context/BrokerContext";
+import { API_BASE_URL } from "@/config/api";
 
 const APIConfiguration = ({ apiType }) => {
   const navigation = useNavigation();
-  const { connectionStatus, setConnectionStatus } =
-    useContext(ConnectionContext);
+  const { isConnected, connectBroker, disconnectBroker } = useContext(BrokerContext);
 
   const [apiKey, setApiKey] = useState("k6pfIbVSZL24lGUXnW6supQVnYbbzX");
   const [apiSecret, setApiSecret] = useState(
@@ -33,68 +33,98 @@ const APIConfiguration = ({ apiType }) => {
 
   const handleTestConnection = async () => {
     setLoading(true);
-
-    const savedUser = await AsyncStorage.getItem("userData");
-    const { _id } = JSON.parse(savedUser);
-
-    if (!apiKey || !apiSecret) {
-      Alert.alert("Error", "Please enter both API Key and API Secret");
-      setLoading(false);
-      return;
-    }
-
-    const savedConnection = await AsyncStorage.getItem("brokerConnection");
-    const parsedConnection = savedConnection
-      ? JSON.parse(savedConnection)
-      : null;
-
-    if (
-      parsedConnection &&
-      parsedConnection.apiType === apiType &&
-      parsedConnection.apiKey === apiKey &&
-      parsedConnection.connection_status === true
-    ) {
-      Alert.alert("Already Connected", "Using saved connection ✔");
-      setConnectionStatus(true);
-      setLoading(false);
-      return;
-    }
+    setStatusMessage("");
 
     try {
-      const response = await axios.post(
-        "https://api.aianalyzer.in/api/connect-api",
-        { userId: _id, apiType, apiKey, apiSecret },
-        { headers: { "Content-Type": "application/json" } }
-      );
+      const savedUser = await AsyncStorage.getItem("userData");
+      if (!savedUser) throw new Error("User data not found");
+
+      const { _id: userId } = JSON.parse(savedUser);
+
+      if (!apiKey.trim() || !apiSecret.trim()) {
+        Alert.alert("Error", "Please enter both API Key and API Secret");
+        return;
+      }
+
+      // Optional: skip server check if we already have matching saved credentials
+      const savedConnection = await AsyncStorage.getItem("brokerConnection");
+      const parsed = savedConnection ? JSON.parse(savedConnection) : null;
+
+      if (
+        parsed &&
+        parsed.apiType === apiType &&
+        parsed.apiKey === apiKey.trim() &&
+        parsed.apiSecret === apiSecret.trim() &&
+        parsed.connection_status
+      ) {
+        Alert.alert("Already Connected", "Using saved credentials");
+        await connectBroker(parsed);
+        return;
+      }
+
+      // Test connection with backend
+      const response = await axios.post(`${API_BASE_URL}/api/connect-api`, {
+        userId,
+        apiType,
+        apiKey: apiKey.trim(),
+        apiSecret: apiSecret.trim(),
+      });
 
       const data = response.data;
 
-      Alert.alert("Success", "Connection successful");
+      if (data.connection_status === true) {
+        const brokerObj = {
+          userId,
+          apiType,
+          apiKey: apiKey.trim(),
+          apiSecret: apiSecret.trim(),
+          connection_status: true,
+          lastTested: new Date().toISOString(),
+        };
 
-      const brokerObj = {
-        userId: _id,
-        apiType,
-        apiKey,
-        apiSecret,
-        connection_status: data.connection_status,
-        lastTested: new Date().toISOString(),
-      };
-
-      await AsyncStorage.setItem("brokerConnection", JSON.stringify(brokerObj));
-      console.log("Broker Connection:", brokerObj);
-      setConnectionStatus(data.connection_status);
-      // fetchDashboardData();
-      setReconnectMode(false);
+        await connectBroker(brokerObj);
+        Alert.alert("Success", "Connection established successfully");
+        setReconnectMode(false);
+        // Optional: navigation.goBack();  // if you want to return after success
+      } else {
+        const reason = data.message || data.error || "Authentication failed";
+        Alert.alert("Connection Failed", reason);
+        setStatusMessage(reason);
+      }
     } catch (error) {
-      console.error("Connection Error:", error);
-      setStatusMessage("Something went wrong ❌");
-    }
+      console.error("Full Axios error:", error);
+      console.error("Response if any:", error.response);
+      console.error("Request config:", error.config);
 
-    setLoading(false);
+      let msg = "Could not connect to server";
+
+      if (error.response) {
+        // Server responded with 500 (or other error status)
+        msg = `Server error ${error.response.status}: ${error.response.data?.message || error.response.data?.error || 'No details'}`;
+        console.log("Server sent:", error.response.data);
+      } else if (error.request) {
+        // No response received (network level)
+        msg = "No response from server – check network / backend is running?";
+      } else {
+        msg = error.message;
+      }
+
+      Alert.alert("Connection Error", msg);
+      setStatusMessage(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  /** ---------------- ALREADY CONNECTED UI ---------------- */
-  if (connectionStatus && !reconnectMode) {
+  const handleDisconnect = async () => {
+    await disconnectBroker();
+    setReconnectMode(true);
+  };
+
+  // ──────────────────────────────────────────────
+  // Already Connected / Success State
+  // ──────────────────────────────────────────────
+  if (isConnected && !reconnectMode) {
     return (
       <View style={styles.connectedContainer}>
         <Feather name="check-circle" size={50} color="#22c55e" />
@@ -102,17 +132,10 @@ const APIConfiguration = ({ apiType }) => {
 
         <TouchableOpacity
           style={[styles.actionButton, styles.reconnectBtn]}
-          onPress={async () => {
-            setConnectionStatus(false);
-            setReconnectMode(true);
-            await AsyncStorage.removeItem("brokerConnection");
-            console.log("Local Is now Empty", AsyncStorage.getItem("brokerConnection"));
-          }}
+          onPress={handleDisconnect}
         >
           <Text style={styles.actionText}>
-            <Feather name="refresh-cw" size={20} color="#fff" />
-            {"  "}
-            Reconnect
+            <Feather name="refresh-cw" size={20} color="#fff" /> Reconnect
           </Text>
         </TouchableOpacity>
 
@@ -128,7 +151,9 @@ const APIConfiguration = ({ apiType }) => {
     );
   }
 
-  /** ---------------- FORM UI ---------------- */
+  // ──────────────────────────────────────────────
+  // Connection Form
+  // ──────────────────────────────────────────────
   return (
     <LinearGradient
       colors={["#AEAED4", "#000", "#AEAED4"]}
@@ -147,17 +172,14 @@ const APIConfiguration = ({ apiType }) => {
           <Text style={styles.header}>API Configuration</Text>
         </View>
 
-        <Text style={styles.description}>
-          Configure your broker API credentials
-        </Text>
+        <Text style={styles.description}>Configure your broker API credentials</Text>
 
-        {statusMessage && (
+        {statusMessage ? (
           <View style={styles.statusSection}>
             <Text style={styles.statusText}>{statusMessage}</Text>
           </View>
-        )}
+        ) : null}
 
-        {/* API KEY */}
         <Text style={styles.inputLabel}>API Key</Text>
         <View style={styles.inputWrapper}>
           <TextInput
@@ -167,6 +189,8 @@ const APIConfiguration = ({ apiType }) => {
             placeholder="Enter API Key"
             placeholderTextColor="#A0AEC0"
             secureTextEntry={!showApiKey}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
           <TouchableOpacity onPress={() => setShowApiKey(!showApiKey)}>
             <Feather
@@ -177,7 +201,6 @@ const APIConfiguration = ({ apiType }) => {
           </TouchableOpacity>
         </View>
 
-        {/* API SECRET */}
         <Text style={[styles.inputLabel, { marginTop: 20 }]}>API Secret</Text>
         <View style={styles.inputWrapper}>
           <TextInput
@@ -187,6 +210,8 @@ const APIConfiguration = ({ apiType }) => {
             placeholder="Enter API Secret"
             placeholderTextColor="#A0AEC0"
             secureTextEntry={!showApiSecret}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
           <TouchableOpacity onPress={() => setShowApiSecret(!showApiSecret)}>
             <Feather
@@ -201,6 +226,7 @@ const APIConfiguration = ({ apiType }) => {
           style={styles.saveButton}
           onPress={handleTestConnection}
           disabled={loading}
+          activeOpacity={0.8}
         >
           {loading ? (
             <ActivityIndicator size="small" color="#fff" />
@@ -215,7 +241,6 @@ const APIConfiguration = ({ apiType }) => {
 
 export default APIConfiguration;
 
-/** ---------------- STYLES ---------------- */
 const styles = StyleSheet.create({
   gradientBoxBorder: {
     borderRadius: 15,
@@ -239,64 +264,68 @@ const styles = StyleSheet.create({
   description: {
     color: "#cbd5e1",
     fontSize: 14,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   inputLabel: {
     color: "#A0AEC0",
     fontSize: 14,
     marginBottom: 8,
+    fontWeight: "500",
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#2d3748",
-    padding: 10,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 10,
   },
   inputField: {
     flex: 1,
     color: "#fff",
+    fontSize: 16,
   },
   saveButton: {
-    backgroundColor: "#078736ff",
-    borderRadius: 8,
-    paddingVertical: 12,
+    backgroundColor: "#078736",
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: "center",
-    marginTop: 30,
+    marginTop: 32,
   },
   saveText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   statusSection: {
     backgroundColor: "#1e293b",
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 12,
-    marginBottom: 15,
+    marginBottom: 20,
   },
   statusText: {
-    color: "#22c55e",
+    color: "#f87171",
     textAlign: "center",
+    fontSize: 14,
   },
 
-  /** Connected UI */
+  // Connected UI
   connectedContainer: {
     backgroundColor: "#111827",
-    padding: 30,
-    borderRadius: 15,
+    padding: 32,
+    borderRadius: 16,
     alignItems: "center",
+    margin: 16,
   },
   connectedText: {
     color: "#22c55e",
-    fontSize: 18,
-    marginVertical: 15,
-    fontWeight: "600",
+    fontSize: 20,
+    fontWeight: "700",
+    marginVertical: 16,
   },
   actionButton: {
     width: "100%",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
     marginTop: 12,
     alignItems: "center",
   },
@@ -309,5 +338,6 @@ const styles = StyleSheet.create({
   actionText: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "600",
   },
 });
