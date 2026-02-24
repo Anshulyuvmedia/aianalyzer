@@ -1,31 +1,94 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useContext, useEffect, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { CopyStrategyContext } from '@/context/CopyStrategyContext';
+import { router } from 'expo-router';
 
-const ActiveStrategies = ({ data }) => {
-    const [strategies, setStrategies] = useState([]);
+const ActiveStrategies = () => {
+    const { strategies, toggleFollow } = useContext(CopyStrategyContext);
+    const [activeStrategies, setActiveStrategies] = useState([]);
 
+    // Filter only followed strategies (assuming isFollowing exists)
     useEffect(() => {
-        if (data) {
-            setStrategies(data);
+        if (strategies?.length > 0) {
+            const followed = strategies.filter(s => s.isFollowing === true);
+            // Add local UI state if backend doesn't provide status yet
+            const withStatus = followed.map(s => ({
+                ...s,
+                status: s.status || 'Active',           // can come from backend later
+                statusColor: s.status === 'Paused' ? '#92400e' : '#14532d',
+            }));
+            setActiveStrategies(withStatus);
         }
-    }, [data]);
+    }, [strategies]);
 
-    const toggleStatus = (index) => {
-        setStrategies(prevStrategies => {
-            const updatedStrategies = [...prevStrategies];
-            const strategy = updatedStrategies[index];
-            if (strategy.status === 'Active') {
-                strategy.status = 'Paused';
-                strategy.statusColor = '#713f12';
-            } else if (strategy.status === 'Paused') {
-                strategy.status = 'Active';
-                strategy.statusColor = '#14532d';
-            }
-            return updatedStrategies;
-        });
+    const handleToggleStatus = (strategyId) => {
+        setActiveStrategies(prev =>
+            prev.map(s =>
+                s._id === strategyId
+                    ? {
+                        ...s,
+                        status: s.status === 'Active' ? 'Paused' : 'Active',
+                        statusColor: s.status === 'Active' ? '#92400e' : '#14532d',
+                    }
+                    : s
+            )
+        );
+
+        // TODO: Call real API to pause/resume strategy
+        // e.g. api.post(`/strategies/${strategyId}/status`, { status: newStatus })
     };
+
+    const handleUnfollow = (strategyId, name) => {
+        Alert.alert(
+            'Unfollow Strategy',
+            `Are you sure you want to unfollow "${name}"?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Unfollow',
+                    style: 'destructive',
+                    onPress: () => {
+                        toggleFollow(strategyId, false); // false = unfollow
+                        // Optional: remove from local list immediately
+                        setActiveStrategies(prev => prev.filter(s => s._id !== strategyId));
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleViewPerformance = (strategyId) => {
+        router.push(`/StrategyPerformance/${strategyId}`);
+    };
+
+    if (activeStrategies.length === 0) {
+        return (
+            <View style={styles.container}>
+                <LinearGradient
+                    colors={['#AEAED4', '#000', '#AEAED4']}
+                    start={{ x: 1, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.gradientBorder}
+                >
+                    <LinearGradient
+                        colors={['#1e2836', '#111827', '#1e2836']}
+                        start={{ x: 0.4, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.innerGradient}
+                    >
+                        <View style={styles.innerContainer}>
+                            <Text style={styles.emptyText}>No active strategies yet</Text>
+                            <Text style={styles.emptySubtext}>
+                                Start following strategies to see them here
+                            </Text>
+                        </View>
+                    </LinearGradient>
+                </LinearGradient>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -33,7 +96,7 @@ const ActiveStrategies = ({ data }) => {
                 colors={['#AEAED4', '#000', '#AEAED4']}
                 start={{ x: 1, y: 0 }}
                 end={{ x: 0, y: 1 }}
-                style={styles.gradientBoxBorder}
+                style={styles.gradientBorder}
             >
                 <LinearGradient
                     colors={['#1e2836', '#111827', '#1e2836']}
@@ -41,71 +104,95 @@ const ActiveStrategies = ({ data }) => {
                     end={{ x: 1, y: 1 }}
                     style={styles.innerGradient}
                 >
-                    {/* Header Section */}
-                    <View style={styles.cardContent}>
-                        <View style={styles.cardHeader}>
-                            <View style={styles.headerLeft}>
-                                <MaterialCommunityIcons name="brain" size={24} color="#34C759" />
-                                <View style={styles.headerText}>
-                                    <Text style={styles.cardChange}>Active Strategies</Text>
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Strategies List */}
-                        {strategies.map((strategy, index) => (
-                            <View key={index} style={styles.strategyCard}>
-                                <View style={styles.strategyHeader}>
-                                    <View style={styles.strategyInfo}>
-                                        <Text style={styles.strategyName}>{strategy.name}</Text>
-                                    </View>
-                                    <View style={styles.strategyStatus}>
-                                        <TouchableOpacity
-                                            style={[styles.statusButton, { backgroundColor: strategy.statusColor }]}
-                                            onPress={() => toggleStatus(index)}
-                                        >
-                                            <Text style={[styles.statusText, { color: '#FFFFFF' }]}>
-                                                {strategy.status}
-                                            </Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={styles.controlIcon}
-                                            onPress={() => {
-                                                if (strategy.status !== 'Inactive') toggleStatus(index);
-                                            }}
-                                        >
-                                            <Ionicons
-                                                name={strategy.status === 'Active' ? 'pause-outline' : 'play-outline'}
-                                                size={24}
-                                                color="white"
-                                            />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={styles.menuIcon}>
-                                            <MaterialCommunityIcons name="cog-outline" size={18} color="white" />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                                <Text style={styles.strategyDescription}>{strategy.description}</Text>
-
-                                <View style={styles.strategyMetrics}>
-                                    <View style={styles.metricItem}>
-                                        <Text style={[styles.metricValue, { color: String(strategy.pnl).startsWith('-') ? '#FF3B15' : '#34C759' }]}>
-                                            {strategy.pnl}
-                                        </Text>
-                                        <Text style={styles.metricLabel}>P&L</Text>
-                                    </View>
-                                    <View style={styles.metricItem}>
-                                        <Text style={styles.metricWinValue}>{strategy.winRate}</Text>
-                                        <Text style={styles.metricLabel}>Win Rate</Text>
-                                    </View>
-                                    <View style={styles.metricItem}>
-                                        <Text style={styles.metricValue}>{strategy.trades}</Text>
-                                        <Text style={styles.metricLabel}>Trades</Text>
-                                    </View>
-                                </View>
-                            </View>
-                        ))}
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <MaterialCommunityIcons name="brain" size={26} color="#34C759" />
+                        <Text style={styles.title}>Active Strategies</Text>
                     </View>
+
+                    {/* Strategy Cards */}
+                    {activeStrategies.map(strategy => (
+                        <TouchableOpacity key={strategy._id} style={styles.strategyCard} onPress={() => handleViewPerformance(strategy._id)}>
+                            <View style={styles.strategyHeader}>
+                                <View style={styles.strategyMainInfo}>
+                                    <Text style={styles.strategyName}>{strategy.name}</Text>
+                                    <Text style={styles.strategyType}>
+                                        {strategy.strategyType || 'Custom'} • {strategy.assetClass || '—'}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.actionsRow}>
+                                    {/* Status Toggle */}
+                                    <View
+                                        style={[
+                                            styles.statusBadge,
+                                            { backgroundColor: strategy.statusColor },
+                                        ]}
+                                    >
+                                        <Text style={styles.statusText}>{strategy.status}</Text>
+                                    </View>
+
+                                    {/* Play/Pause icon */}
+                                    <TouchableOpacity
+                                        style={styles.controlButton}
+                                        onPress={() => handleToggleStatus(strategy._id)}
+                                    >
+                                        <Ionicons
+                                            name={strategy.status === 'Active' ? 'pause' : 'play'}
+                                            size={22}
+                                            color="#e5e7eb"
+                                        />
+                                    </TouchableOpacity>
+
+                                    {/* Unfollow */}
+                                    <TouchableOpacity
+                                        style={styles.controlButton}
+                                        onPress={() => handleUnfollow(strategy._id, strategy.name)}
+                                    >
+                                        <MaterialCommunityIcons name="account-minus" size={22} color="#f87171" />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            {/* Description (optional - truncate if too long) */}
+                            {strategy.description && (
+                                <Text style={styles.description} numberOfLines={2}>
+                                    {strategy.description}
+                                </Text>
+                            )}
+
+                            {/* Metrics */}
+                            <View style={styles.metricsRow}>
+                                <View style={styles.metric}>
+                                    <Text
+                                        style={[
+                                            styles.metricValue,
+                                            {
+                                                color: String(strategy.pnl || '').startsWith('-')
+                                                    ? '#f87171'
+                                                    : '#34C759',
+                                            },
+                                        ]}
+                                    >
+                                        {strategy.pnl || '—'}
+                                    </Text>
+                                    <Text style={styles.metricLabel}>P&L</Text>
+                                </View>
+
+                                <View style={styles.metric}>
+                                    <Text style={[styles.metricValue, { color: '#60a5fa' }]}>
+                                        {strategy.winRate || '—'}
+                                    </Text>
+                                    <Text style={styles.metricLabel}>Win Rate</Text>
+                                </View>
+
+                                <View style={styles.metric}>
+                                    <Text style={styles.metricValue}>{strategy.trades || '—'}</Text>
+                                    <Text style={styles.metricLabel}>Trades</Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    ))}
                 </LinearGradient>
             </LinearGradient>
         </View>
@@ -113,125 +200,108 @@ const ActiveStrategies = ({ data }) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        marginBottom: 10,
-    },
-    gradientBoxBorder: {
-        borderRadius: 15,
-        padding: 1,
-    },
-    innerGradient: {
-        borderRadius: 14,
-        padding: 15,
-    },
-    cardContent: {},
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        marginBottom: 15,
-    },
-    headerLeft: {
+    container: { marginBottom: 16 },
+    gradientBorder: { borderRadius: 16, padding: 1.5 },
+    innerGradient: { borderRadius: 14.5, padding: 16 },
+    // innerContainer: { borderRadius: 14.5, padding: 16 },
+    header: {
         flexDirection: 'row',
         alignItems: 'center',
-        width: '75%',
+        marginBottom: 16,
     },
-    headerText: {
-        marginLeft: 8,
+    title: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#f3f4f6',
+        marginLeft: 10,
     },
-    headerRight: {
-        alignItems: 'flex-end',
-    },
-    activeBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#22c55e',
-        borderRadius: 20,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-    },
-    activeText: {
-        color: '#22c55e',
-        marginHorizontal: 5,
-        fontSize: 12,
-    },
-    cardChange: {
-        fontSize: 18,
-        fontWeight: '500',
-        color: '#FFFFFF',
-    },
-    subText: {
-        color: '#9CA3AF',
-        fontSize: 12,
-        marginBottom: 5,
-        width: '60%',
-    },
+
     strategyCard: {
-        backgroundColor: '#2d3748',
-        borderRadius: 10,
-        padding: 10,
-        marginBottom: 10,
+        backgroundColor: '#1f2937',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#374151',
     },
     strategyHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-    },
-    strategyInfo: {
-        flex: 1,
-    },
-    strategyName: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 5,
-    },
-    strategyDescription: {
-        color: '#9CA3AF',
-        fontSize: 12,
+        alignItems: 'flex-start',
         marginBottom: 10,
     },
-    strategyStatus: {
+    strategyMainInfo: { flex: 1 },
+    strategyName: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#f3f4f6',
+        marginBottom: 3,
+        textTransform: 'capitalize',
+    },
+    strategyType: {
+        fontSize: 13,
+        color: '#9ca3af',
+    },
+
+    actionsRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 8,
     },
-    statusButton: {
+    statusBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderRadius: 10,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
+        minWidth: 80,
+        alignItems: 'center',
     },
     statusText: {
-        fontSize: 12,
-        fontWeight: '500',
+        color: '#ffffff',
+        fontSize: 13,
+        fontWeight: '600',
     },
-    controlIcon: {
-        marginLeft: 10,
+    controlButton: {
+        padding: 6,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255,255,255,0.08)',
     },
-    menuIcon: {
-        marginLeft: 10,
+
+    description: {
+        fontSize: 13,
+        color: '#9ca3af',
+        lineHeight: 18,
+        marginBottom: 12,
     },
-    strategyMetrics: {
+
+    metricsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#374151',
     },
-    metricItem: {
-        alignItems: 'center',
-    },
+    metric: { alignItems: 'center', flex: 1 },
     metricValue: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#c07ee1',
-    },
-    metricWinValue: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#419dfa',
+        fontSize: 17,
+        fontWeight: '700',
+        marginBottom: 4,
     },
     metricLabel: {
-        color: '#9CA3AF',
         fontSize: 12,
-        marginTop: 5,
+        color: '#9ca3af',
+    },
+
+    emptyText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#e5e7eb',
+        textAlign: 'center',
+        marginVertical: 20,
+    },
+    emptySubtext: {
+        fontSize: 14,
+        color: '#9ca3af',
+        textAlign: 'center',
     },
 });
 

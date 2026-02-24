@@ -8,15 +8,23 @@ const TopTraders = ({ toptradersdata }) => {
 
     useEffect(() => {
         if (toptradersdata) {
-            setTopTraders(toptradersdata);
+            // Add isFollowing field with default false to each item
+            const enriched = toptradersdata.map(item => ({
+                ...item,
+                isFollowing: false   // ← or true if you want to load real follow status
+            }));
+            setTopTraders(enriched);
         }
     }, [toptradersdata]);
 
     const toggleFollow = (index) => {
-        setTraders(prevTraders => {
-            const updatedTraders = [...prevTraders];
-            updatedTraders[index].isFollowing = !updatedTraders[index].isFollowing;
-            return updatedTraders;
+        setTopTraders(prev => {
+            const updated = [...prev];
+            updated[index] = {
+                ...updated[index],
+                isFollowing: !updated[index].isFollowing
+            };
+            return updated;
         });
     };
 
@@ -39,7 +47,7 @@ const TopTraders = ({ toptradersdata }) => {
                             </View>
                             <View style={styles.subtitleRow}>
                                 <View style={styles.traderIcon}>
-                                    <Feather name="star" size={16} color="gold" />
+                                    <Feather name="star" size={12} color="gold" />
                                 </View>
                                 <Text style={styles.subtitle}>{item.rating}</Text>
                                 <Text style={styles.subtitle}> | </Text>
@@ -49,7 +57,7 @@ const TopTraders = ({ toptradersdata }) => {
                     </View>
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
-                            style={[styles.followButton, { backgroundColor: item.isFollowing ? '#d72424' : '#3B82F6' }]}
+                            style={[styles.followButton, { backgroundColor: item.isFollowing ? '#d72424' : '#2055df' }]}
                             onPress={() => toggleFollow(index)}
                         >
                             <SimpleLineIcons
@@ -102,7 +110,7 @@ const TopTraders = ({ toptradersdata }) => {
                             <View style={styles.traderIcon}>
                                 <MaterialCommunityIcons name="crown" size={20} color="#FFD700" />
                             </View>
-                            <Text style={styles.headerText}>Top Traders</Text>
+                            <Text style={styles.headerText}>Top Strategies</Text>
                         </View>
                         <FlatList
                             data={toptraders}
@@ -147,7 +155,7 @@ const styles = StyleSheet.create({
     },
     traderInfo: {
         flex: 1,
-        paddingLeft: 10,
+        paddingLeft: 0,
     },
     headerRow: {
         flexDirection: 'row',
@@ -156,14 +164,14 @@ const styles = StyleSheet.create({
     },
     rankNameContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'start',
     },
     traderRank: {
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#2055df',
-        width: 40,
-        height: 40,
+        width: 25,
+        height: 25,
         borderRadius: 20,
         marginRight: 10,
     },
@@ -197,6 +205,7 @@ const styles = StyleSheet.create({
     },
     traderIcon: {
         marginRight: 5,
+        marginBottom: 5,
     },
     buttonContainer: {
         alignItems: 'flex-end',

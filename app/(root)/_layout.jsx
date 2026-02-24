@@ -11,6 +11,8 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="brokerapiconnect" options={{ headerShown: false }} />
             <Stack.Screen name="OverallanalysisResult" options={{ headerShown: false }} />
             <Stack.Screen name="BacktestingResultsPage" options={{ headerShown: false }} />
+            <Stack.Screen name="strategy/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="StrategyPerformance/[id]" options={{ headerShown: false }} />
         </Stack>
     );
 }

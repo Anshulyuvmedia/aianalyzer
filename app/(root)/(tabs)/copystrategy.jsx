@@ -1,23 +1,21 @@
 import CopyTradingPerformance from '@/components/CopyTradingPerformance';
 import HomeHeader from '@/components/HomeHeader';
 import RecentCopyTrades from '@/components/RecentCopyTrades';
-import TopTraders from '@/components/TopTraders';
+import StrategyList from '@/components/StrategyList';
+import IndexCard from '@/components/IndexCard';
 import { useContext, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { CopyTradingContext } from "@/context/CopyTradingContext";
+import { CopyStrategyContext } from "@/context/CopyStrategyContext";
 
-
-const CopyTrading = () => {
-    const { copytradingData } = useContext(CopyTradingContext);
-    const copystats = copytradingData?.copystats;
-    const topTraders = copytradingData?.topTraders;
-    const recentCopyTrades = copytradingData?.recentCopyTrades;
+const CopyStrategy = () => {
+    const { strategies, recentCopyTrades } = useContext(CopyStrategyContext);
+    // console.log('copyStrategyData', strategies);
     const [data] = useState({
         dashboardMetrics: [
             {
                 id: 'total-portfolio',
                 label: 'Copy Trading P&L',
-                value: copystats?.copyTradingPnL,
+                // value: copystats?.copyTradingPnL,
                 changeColor: '#34C759',
                 iconColor: '#4ade80',
                 icon: 'line-chart',
@@ -25,7 +23,7 @@ const CopyTrading = () => {
             {
                 id: 'active-strategies',
                 label: 'Followed Traders',
-                value: copystats?.followedTraders,
+                // value: copystats?.followedTraders,
                 changeColor: '#34C759',
                 iconColor: '#60a5fa',
                 icon: 'users',
@@ -33,7 +31,7 @@ const CopyTrading = () => {
             {
                 id: 'win-rate',
                 label: 'Success Rate',
-                value: copystats?.successRate,
+                // value: copystats?.successRate,
                 changeColor: '#34C759',
                 iconColor: '#facc15',
                 icon: 'trophy',
@@ -41,7 +39,7 @@ const CopyTrading = () => {
             {
                 id: 'max-drawdown',
                 label: 'Copied Trades',
-                value: copystats?.copiedTrades,
+                // value: copystats?.copiedTrades,
                 changeColor: '#FF3B15',
                 iconColor: '#c084fc',
                 icon: 'activity',
@@ -52,10 +50,10 @@ const CopyTrading = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     const components = [
-        // { id: '1', component: <IndexCard data={data} page="algo" /> },
-        { id: '2', component: <TopTraders toptradersdata={topTraders} /> },
+        { id: '1', component: <IndexCard data={data} page="algo" /> },
+        { id: '2', component: <StrategyList /> },
         { id: '3', component: <RecentCopyTrades recentCopyTrades={recentCopyTrades} /> },
-        // { id: '4', component: <CopyTradingPerformance /> },
+        { id: '4', component: <CopyTradingPerformance /> },
     ];
 
     const renderItem = ({ item }) => (
@@ -66,14 +64,13 @@ const CopyTrading = () => {
 
     const onRefresh = () => {
         setRefreshing(true);
-        // Simulate a refresh action (e.g., fetching new data)
         setTimeout(() => {
             setRefreshing(false);
-        }, 2000); // Replace with actual data fetching logic
+        }, 2000);
     };
     return (
         <View style={styles.container}>
-            <HomeHeader page="home" title="Copy Trading" subtitle="Follow and copy trades from successful traders" />
+            <HomeHeader page="home" title="Copy Strategy" subtitle="Follow strategies for better results" />
 
             <FlatList
                 data={components}
@@ -84,8 +81,8 @@ const CopyTrading = () => {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        colors={['#34C759', '#FF3B15']} // Custom colors for the refresh indicator
-                        progressBackgroundColor="#1e2836" // Background color of the refresh circle
+                        colors={['#34C759', '#FF3B15']}
+                        progressBackgroundColor="#1e2836"
                     />
                 }
             />
@@ -93,13 +90,13 @@ const CopyTrading = () => {
     )
 }
 
-export default CopyTrading;
+export default CopyStrategy;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
-        padding: 10,
+        paddingHorizontal: 10,
     },
     section: {
         marginBottom: 10,

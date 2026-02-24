@@ -1,5 +1,4 @@
 import ActiveStrategies from '@/components/ActiveStrategies';
-import AiTrading from '@/components/AiTrading';
 import HomeHeader from '@/components/HomeHeader';
 import IndexCard from '@/components/IndexCard';
 import RecentTrades from '@/components/RecentTrades';
@@ -8,10 +7,9 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { AlgoTradingContext } from "@/context/AlgoTradingContext";
 
 const AlgoTrading = () => {
-    const { loadingDashboard, loadingAlgotrading, algotradingData } = useContext(AlgoTradingContext);
+    const {algotradingData } = useContext(AlgoTradingContext);
 
     const summary = algotradingData?.summary;
-    const aitrading = algotradingData?.aiTrading;
     const activeStrategies = algotradingData?.activeStrategies;
     const recentTrades = algotradingData?.recentTrades;
 
@@ -64,7 +62,6 @@ const AlgoTrading = () => {
 
     const components = [
         { id: '1', component: <IndexCard data={data} page="algo" /> },
-        { id: '2', component: <AiTrading data={aitrading} /> },
         { id: '3', component: <ActiveStrategies data={activeStrategies} /> },
         { id: '4', component: <RecentTrades data={recentTrades} /> },
     ];
@@ -113,7 +110,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
     },
     section: {
-        marginTop: 10,
+        marginTop: 0,
     },
 });
 

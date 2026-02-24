@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 
-const AiTrading = ({ data }) => {
+const AiTrading = ({ data, strategy }) => {
 
     const progress = data?.confidence / 100;
     const radius = 40;
@@ -163,7 +163,7 @@ const AiTrading = ({ data }) => {
                         </View>
 
                         {/* Buttons */}
-                        <View style={styles.buttonContainer}>
+                        {/* <View style={styles.buttonContainer}>
                             <TouchableOpacity style={styles.detailsButton}>
                                 <Octicons name="book" size={18} color="#FFFFFF" />
                                 <Text style={styles.buttonText}>View Strategy Details</Text>
@@ -173,7 +173,7 @@ const AiTrading = ({ data }) => {
                                 <MaterialCommunityIcons name="rocket" size={18} color="#FFFFFF" />
                                 <Text style={styles.buttonText}>Active AI Bot</Text>
                             </TouchableOpacity>
-                        </View>
+                        </View> */}
 
                     </View>
                 </LinearGradient>

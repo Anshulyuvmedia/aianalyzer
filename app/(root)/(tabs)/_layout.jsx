@@ -66,7 +66,7 @@ const TabItem = ({ route, index, isFocused, options, navigation }) => {
     const iconMap = {
       index: focused ? 'home' : 'home-outline',
       algotrading: focused ? 'hardware-chip-sharp' : 'hardware-chip-outline',
-      copytrading: focused ? 'copy' : 'copy-outline',
+      copystrategy: focused ? 'copy' : 'copy-outline',
       chartanalysis: focused ? 'stats-chart' : 'stats-chart-outline',
       backtesting: focused ? 'git-compare' : 'git-compare-outline',
     };
@@ -229,9 +229,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="copytrading"
+        name="copystrategy"
         options={{
-          title: 'Copy Trading',
+          title: 'Copy Strategy',
           lazy: true,
         }}
       />

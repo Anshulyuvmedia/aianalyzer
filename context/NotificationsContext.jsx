@@ -27,7 +27,7 @@ export const NotificationsProvider = ({ children }) => {
                 `${API_BASE_URL}/api/appdata/get-notifications?page=${page}&limit=${notifications.limit}`
             );
 
-            // console.log('notifi', res.data);
+            // console.log('notifi', res.data.data);
             const { data = [], total = 0, hasMore = false } = res.data || {};
             setNotifications(prev => ({
                 data: append ? [...prev.data, ...data] : data,

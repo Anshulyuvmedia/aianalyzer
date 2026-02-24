@@ -1,3 +1,4 @@
+import { useContext } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -6,6 +7,7 @@ import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import * as Haptics from 'react-native-haptic-feedback';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { AuthContext } from '@/context/AuthContext';
 
 const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
@@ -64,17 +66,29 @@ const MenuButton = ({ item, onPress, isLogout = false }) => {
 };
 
 const Dashboard = () => {
+    const { logout } = useContext(AuthContext);
     // Handle logout
     const handleLogout = async () => {
-        try {
-            await AsyncStorage.removeItem('userSession');
-            Haptics.trigger('impactMedium');
-            router.push('/(auth)/login');
-        } catch (error) {
-            console.error('Error clearing session:', error);
-            Alert.alert('Error', 'Failed to log out. Please try again.');
-        }
-    };
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to log out?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            Haptics.trigger('impactMedium');
+                            await logout();
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to log out.');
+                        }
+                    },
+                },
+            ]
+        );
+    }; 
 
     // Handle navigation to different screens
     const navigateToScreen = (screenName) => {

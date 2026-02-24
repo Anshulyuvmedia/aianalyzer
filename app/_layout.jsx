@@ -10,7 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationsProvider } from '@/context/NotificationsContext';
 import { ReferralsProvider } from '@/context/ReferralsContext';
-import { CopyTradingProvider } from '@/context/CopyTradingContext';
+import { CopyStrategyProvider } from '@/context/CopyStrategyContext';
 import { AlgoTradingProvider } from '@/context/AlgoTradingContext';
 import { DashboardProvider } from '@/context/DashboardContext';
 import { AuthProvider } from '@/context/AuthContext';
@@ -75,7 +75,7 @@ function SafeAreaViewWrapper({ statusBarColor }) {
                 <BrokerProvider>
                     <DashboardProvider>
                         <AlgoTradingProvider>
-                            <CopyTradingProvider>
+                            <CopyStrategyProvider>
                                 <NotificationsProvider>
                                     <ReferralsProvider>
                                         {/* View to simulate the status bar background */}
@@ -104,7 +104,7 @@ function SafeAreaViewWrapper({ statusBarColor }) {
                                         </Stack>
                                     </ReferralsProvider>
                                 </NotificationsProvider>
-                            </CopyTradingProvider>
+                            </CopyStrategyProvider>
                         </AlgoTradingProvider>
                     </DashboardProvider>
                 </BrokerProvider>
