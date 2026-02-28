@@ -3,12 +3,10 @@ import HomeHeader from '@/components/HomeHeader';
 import RecentCopyTrades from '@/components/RecentCopyTrades';
 import StrategyList from '@/components/StrategyList';
 import IndexCard from '@/components/IndexCard';
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { CopyStrategyContext } from "@/context/CopyStrategyContext";
 
 const CopyStrategy = () => {
-    const { strategies, recentCopyTrades } = useContext(CopyStrategyContext);
     // console.log('copyStrategyData', strategies);
     const [data] = useState({
         dashboardMetrics: [
@@ -52,7 +50,7 @@ const CopyStrategy = () => {
     const components = [
         { id: '1', component: <IndexCard data={data} page="algo" /> },
         { id: '2', component: <StrategyList /> },
-        { id: '3', component: <RecentCopyTrades recentCopyTrades={recentCopyTrades} /> },
+        // { id: '3', component: <RecentCopyTrades recentCopyTrades={recentCopyTrades} /> },
         { id: '4', component: <CopyTradingPerformance /> },
     ];
 

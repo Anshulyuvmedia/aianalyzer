@@ -1,23 +1,19 @@
 
 import { Feather } from '@expo/vector-icons';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Picker } from '@react-native-picker/picker'; // Ensure this package is installed
-import axios from "axios";
+import { Picker } from '@react-native-picker/picker';
 import { useRouter } from "expo-router";
 import { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { API_BASE_URL } from "@/config/api";
+import { useAnalysis } from '@/context/ChartAnalysisContext';
 
 const SelectTradingPairs = () => {
+    const { requestAnalysis, isAnalyzing } = useAnalysis();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('Forex');
     const [analysisType, setAnalysisType] = useState('Swing');
     const [selectedPairs, setSelectedPairs] = useState([]);
     const [timeframe, setTimeframe] = useState('1H');
-    const [analysisData, setAnalysisData] = useState(null);
-    const [loading, setLoading] = useState(false);
-
 
     const tabs = {
         Forex: [
@@ -60,40 +56,25 @@ const SelectTradingPairs = () => {
     };
 
     const handleAnalyzeChart = async () => {
-
-        if (!selectedPairs || selectedPairs.length === 0) {
-            Alert.alert("Error", "Please select at least one trading pair");
+        if (selectedPairs.length === 0) {
+            Alert.alert('Error', 'Please select at least one trading pair');
             return;
         }
-        setLoading(true);
-        const savedUser = await AsyncStorage.getItem("userData");
-        const { _id } = JSON.parse(savedUser);
 
-        try {
-            const response = await axios.post(`${API_BASE_URL}/api/appdata/chart-analysis`, {
-                activeTab,
-                selectedPairs,
-                analysisType,
-                timeframe,
-                userId: _id,
-            });
-            // console.log("Analysis Response:", JSON.stringify(response.data, null, 3));
+        const success = await requestAnalysis({
+            activeTab,
+            selectedPairs,
+            analysisType,
+            timeframe,
+        });
 
-            setAnalysisData(response.data.overallAnalysis);
-
-            // ✅ Reset Form After Success
+        if (success) {
             setSelectedPairs([]);
-            setActiveTab("Forex");
-            setAnalysisType("Swing");
-            setTimeframe("1H");
-            console.log("Form Reset Done!");
-            router.push('../OverallanalysisResult');
+            setActiveTab('Forex');
+            setAnalysisType('Swing');
+            setTimeframe('1H');
 
-        } catch (error) {
-            console.log("Analysis Fetch Error:", error);
-            Alert.alert("Error", error?.response?.data?.message || "Something went wrong!");
-        } finally {
-            setLoading(false); // Stop Loader
+            router.push('../OverallanalysisResult');
         }
     };
 
@@ -205,11 +186,11 @@ const SelectTradingPairs = () => {
                                 </View>
                             </View>
                             <TouchableOpacity
-                                style={[styles.analyzeButton, loading && { opacity: 0.7 }]}
+                                style={[styles.analyzeButton, isAnalyzing && { opacity: 0.7 }]}
                                 onPress={handleAnalyzeChart}
-                                disabled={loading} // disable when loading
+                                disabled={isAnalyzing} // disable when loading
                             >
-                                {loading ? (
+                                {isAnalyzing ? (
                                     <ActivityIndicator size="small" color="#fff" />
                                 ) : (
                                     <Text style={styles.analyzeText}>Analyze Chart</Text>

@@ -5,6 +5,7 @@ import AiTrading from '@/components/AiTrading';
 import { AlgoTradingContext } from "@/context/AlgoTradingContext";
 import { useLocalSearchParams } from 'expo-router';
 import { CopyStrategyContext } from '../../../context/CopyStrategyContext';
+import RecentTrades from '@/components/RecentTrades';
 
 const StrategyPerformance = () => {
     const { id } = useLocalSearchParams();
@@ -29,6 +30,7 @@ const StrategyPerformance = () => {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <AiTrading data={aitrading} strategy={strategy} />
+                <RecentTrades data={aitrading} strategy={strategy} />
             </ScrollView>
         </View>
     )

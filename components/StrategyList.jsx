@@ -16,7 +16,7 @@ const StrategyList = () => {  // ← no need to receive strategies as prop anymo
     const renderStrategyItem = ({ item }) => (
         <TouchableOpacity
             activeOpacity={0.88}
-            onPress={() => router.push(`/strategy/${item._id}`)}
+            onPress={() => router.push(`/StrategyDetail/${item._id}`)}
             style={styles.strategyCard}
         >
             <LinearGradient

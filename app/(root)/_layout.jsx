@@ -11,8 +11,11 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="brokerapiconnect" options={{ headerShown: false }} />
             <Stack.Screen name="OverallanalysisResult" options={{ headerShown: false }} />
             <Stack.Screen name="BacktestingResultsPage" options={{ headerShown: false }} />
-            <Stack.Screen name="strategy/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="StrategyDetail/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="StrategyPerformance/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="Discovery/InstrumentList" options={{ headerShown: false }} />
+            <Stack.Screen name="Discovery/[symbol]" options={{ headerShown: false }} />
+            <Stack.Screen name="Discovery/placeOrder" options={{ headerShown: false }} />
         </Stack>
     );
 }

@@ -1,7 +1,6 @@
 import ActiveStrategies from '@/components/ActiveStrategies';
 import HomeHeader from '@/components/HomeHeader';
 import IndexCard from '@/components/IndexCard';
-import RecentTrades from '@/components/RecentTrades';
 import { useContext, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { AlgoTradingContext } from "@/context/AlgoTradingContext";
@@ -11,7 +10,6 @@ const AlgoTrading = () => {
 
     const summary = algotradingData?.summary;
     const activeStrategies = algotradingData?.activeStrategies;
-    const recentTrades = algotradingData?.recentTrades;
 
     const [data, setData] = useState({
         dashboardMetrics: []
@@ -62,8 +60,7 @@ const AlgoTrading = () => {
 
     const components = [
         { id: '1', component: <IndexCard data={data} page="algo" /> },
-        { id: '3', component: <ActiveStrategies data={activeStrategies} /> },
-        { id: '4', component: <RecentTrades data={recentTrades} /> },
+        { id: '2', component: <ActiveStrategies data={activeStrategies} /> },
     ];
 
     const renderItem = ({ item }) => (

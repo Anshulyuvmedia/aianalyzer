@@ -1,7 +1,6 @@
 import { useContext } from 'react';
 import HomeHeader from '@/components/HomeHeader';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { Alert, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Haptics from 'react-native-haptic-feedback';
@@ -15,7 +14,7 @@ const BUTTON_WIDTH = Math.min(width * 0.9, 400);
 const menuItems = [
     { name: 'Broker Connection', route: 'brokerconnection', icon: 'cog' },
     { name: 'Reports', route: 'reports', icon: 'chart-line' },
-    // { name: 'FOX Strategy Builder', route: 'foxstrategybuilder', icon: 'rocket' },
+    { name: 'Discovery', route: 'Discovery/InstrumentList', icon: 'rocket' },
     // { name: 'Detailed Metrics', route: 'detailedmatrics', icon: 'chart-bar' },
     // { name: 'Strategy Backtesting', route: 'strategybacktesting', icon: 'history' },
     // { name: 'AI Generated Trade', route: 'aigeneratedtrade', icon: 'robot' },
@@ -131,7 +130,7 @@ const styles = StyleSheet.create({
         flex: 1,
         // paddingHorizontal: 16,
         alignItems: 'center',
-        paddingVertical: 20,
+        // paddingVertical: 20,
     },
     menuContainer: {
         width: '100%',

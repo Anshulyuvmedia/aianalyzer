@@ -1,9 +1,7 @@
-import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import React from 'react';
-import images from '@/constants/images';
 import LinearGradient from 'react-native-linear-gradient';
 import { FontAwesome, Feather, Ionicons } from '@expo/vector-icons';
-import SearchBar from '@/components/SearchBar';
 import { useRouter, useNavigation } from 'expo-router'; // Import useNavigation
 
 const HomeHeader = ({ page, title, action, subtitle }) => {

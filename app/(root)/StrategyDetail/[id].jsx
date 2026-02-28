@@ -1,10 +1,11 @@
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import HomeHeader from '@/components/HomeHeader';
 import { useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import RecentCopyTrades from '@/components/RecentCopyTrades';
 
 const StrategyDetails = () => {
     const { id } = useLocalSearchParams();
@@ -64,82 +65,117 @@ const StrategyDetails = () => {
         );
     }
 
+    // ──────────────────────────────────────────────
+    // Prepare FlatList data (sections as items)
+    // ──────────────────────────────────────────────
+    const listData = [
+        { type: 'core-info', strategy },
+        { type: 'trading-params', strategy },
+        { type: 'backtest', strategy },
+    ];
+
+    const renderItem = ({ item }) => {
+        switch (item.type) {
+            case 'core-info':
+                return (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Core Information</Text>
+                        <View style={styles.infoCard}>
+                            <InfoRow
+                                icon="calendar-clock"
+                                label="Timeframes"
+                                value={item.strategy.timeframes?.join(' • ') || 'Not specified'}
+                            />
+                            <InfoRow
+                                icon="chart-line"
+                                label="Symbols"
+                                value={item.strategy.symbols?.join(', ') || 'Any'}
+                            />
+                            <InfoRow
+                                icon="tag-multiple"
+                                label="Tags"
+                                value={item.strategy.tags?.join(' • ') || 'None'}
+                            />
+                        </View>
+                    </View>
+                );
+
+            case 'trading-params':
+                return (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Trading Parameters</Text>
+                        <View style={styles.infoCard}>
+                            <InfoRow
+                                icon="shield-check"
+                                label="Risk per Trade"
+                                value={`${item.strategy.defaultConfig?.riskPerTradePercent || 1}%`}
+                                valueStyle={{ color: '#fbbf24' }}
+                            />
+                            <InfoRow
+                                icon="wallet"
+                                label="Initial Capital"
+                                value={`$${item.strategy.defaultConfig?.initialCapital?.toLocaleString() || 'N/A'}`}
+                            />
+                        </View>
+                    </View>
+                );
+
+            case 'backtest':
+                return (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Backtesting Result</Text>
+                        <RecentCopyTrades />
+                    </View>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    const HeaderComponent = () => (
+        <LinearGradient
+            colors={['#000000', '#1e293b']}
+            style={styles.headerCard}
+        >
+            <Text style={styles.strategyName}>{strategy.name}</Text>
+            <Text style={styles.strategyDescription}>
+                {strategy.description || 'No description available'}
+            </Text>
+
+            <View style={styles.badgesRow}>
+                <View style={[styles.badge, styles.badgePrimary]}>
+                    <MaterialCommunityIcons name="finance" size={16} color="#fff" />
+                    <Text style={styles.badgeText}>{strategy.strategyType || 'Custom'}</Text>
+                </View>
+                <View style={[styles.badge, styles.badgeSecondary]}>
+                    <MaterialCommunityIcons name="earth" size={16} color="#fff" />
+                    <Text style={styles.badgeText}>{strategy.assetClass || 'N/A'}</Text>
+                </View>
+            </View>
+        </LinearGradient>
+    );
+
+    const keyExtractor = (_, index) => `section-${index}`;
+
     return (
         <View style={styles.safeArea}>
-            <HomeHeader page="chatbot" title="Strategy Details" subtitle='Complete detail for strategies' />
+            <HomeHeader page="chatbot" title="Strategy Details" subtitle="Complete detail for strategies" />
 
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                {/* Header Card */}
-                <LinearGradient
-                    colors={['#000000', '#1e293b']}
-                    style={styles.headerCard}
-                >
-                    <Text style={styles.strategyName}>{strategy.name}</Text>
-                    <Text style={styles.strategyDescription}>
-                        {strategy.description || 'No description available'}
-                    </Text>
-
-                    <View style={styles.badgesRow}>
-                        <View style={[styles.badge, styles.badgePrimary]}>
-                            <MaterialCommunityIcons name="finance" size={16} color="#fff" />
-                            <Text style={styles.badgeText}>{strategy.strategyType || 'Custom'}</Text>
-                        </View>
-                        <View style={[styles.badge, styles.badgeSecondary]}>
-                            <MaterialCommunityIcons name="earth" size={16} color="#fff" />
-                            <Text style={styles.badgeText}>{strategy.assetClass || 'N/A'}</Text>
-                        </View>
-                    </View>
-                </LinearGradient>
-
-                {/* Main Info Section */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Core Information</Text>
-
-                    <View style={styles.infoCard}>
-                        <InfoRow
-                            icon="calendar-clock"
-                            label="Timeframes"
-                            value={strategy.timeframes?.join(' • ') || 'Not specified'}
-                        />
-                        <InfoRow
-                            icon="chart-line"
-                            label="Symbols"
-                            value={strategy.symbols?.join(', ') || 'Any'}
-                        />
-                        <InfoRow
-                            icon="tag-multiple"
-                            label="Tags"
-                            value={strategy.tags?.join(' • ') || 'None'}
-                        />
-                    </View>
-                </View>
-
-                {/* Trading Parameters */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Trading Parameters</Text>
-
-                    <View style={styles.infoCard}>
-                        <InfoRow
-                            icon="shield-check"
-                            label="Risk per Trade"
-                            value={`${strategy.defaultConfig?.riskPerTradePercent || 1}%`}
-                            valueStyle={{ color: '#fbbf24' }}
-                        />
-                        <InfoRow
-                            icon="wallet"
-                            label="Initial Capital"
-                            value={`$${strategy.defaultConfig?.initialCapital?.toLocaleString() || 'N/A'}`}
-                        />
-                    </View>
-                </View>
-            </ScrollView>
+            <FlatList
+                data={listData}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.flatListContent}
+                ListHeaderComponent={HeaderComponent}
+                stickyHeaderIndices={[0]}
+            />
         </View>
     );
 };
 
-/* ──────────────────────────────────────────────
-   Reusable Info Row Component
-─────────────────────────────────────────────── */
+// InfoRow component remains unchanged
 const InfoRow = ({ icon, label, value, valueStyle }) => (
     <View style={styles.infoRow}>
         <View style={styles.iconContainer}>
@@ -153,15 +189,15 @@ const InfoRow = ({ icon, label, value, valueStyle }) => (
 );
 
 /* ──────────────────────────────────────────────
-   Styles
+Styles
 ─────────────────────────────────────────────── */
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: '#000',
     },
-    scrollView: {
-        flex: 1,
+    flatListContent: {
+        paddingBottom: 24, // or more if you have bottom tab/nav
     },
     center: {
         flex: 1,
@@ -191,9 +227,10 @@ const styles = StyleSheet.create({
     // Header Card
     headerCard: {
         padding: 24,
-        paddingTop: 0,
+        paddingTop: 16,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
+        marginBottom: 8,
         elevation: 8,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
@@ -205,6 +242,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#ffffff',
         marginBottom: 8,
+        textTransform: 'capitalize',
     },
     strategyDescription: {
         fontSize: 15,
