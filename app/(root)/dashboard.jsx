@@ -15,7 +15,8 @@ const menuItems = [
     { name: 'Broker Connection', route: 'brokerconnection', icon: 'cog' },
     { name: 'Reports', route: 'reports', icon: 'chart-line' },
     { name: 'Discovery', route: 'Discovery/InstrumentList', icon: 'rocket' },
-    // { name: 'Detailed Metrics', route: 'detailedmatrics', icon: 'chart-bar' },
+    { name: 'Positions', route: 'Portfolio/PositionsScreen', icon: 'chart-bar' },
+    { name: 'Orders', route: 'Portfolio/OrdersScreen', icon: 'history' },
     // { name: 'Strategy Backtesting', route: 'strategybacktesting', icon: 'history' },
     // { name: 'AI Generated Trade', route: 'aigeneratedtrade', icon: 'robot' },
 ];

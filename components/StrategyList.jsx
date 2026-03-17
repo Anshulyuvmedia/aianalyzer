@@ -7,7 +7,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { CopyStrategyContext } from '@/context/CopyStrategyContext';
 
 const StrategyList = () => {  // ← no need to receive strategies as prop anymore
-    const { strategies, toggleFollow } = useContext(CopyStrategyContext);
+    const { strategies, toggleFollow, } = useContext(CopyStrategyContext);
     // console.log('strategies', strategies);
     const handleToggle = (strategy) => {
         toggleFollow(strategy._id, !strategy.isFollowing);
@@ -29,7 +29,7 @@ const StrategyList = () => {  // ← no need to receive strategies as prop anymo
             <View style={styles.cardContent}>
                 <View style={styles.topRow}>
                     <Text style={styles.strategyName}>{item.name}</Text>
-
+                    
                     <TouchableOpacity
                         style={[
                             styles.followBtn,
@@ -43,7 +43,7 @@ const StrategyList = () => {  // ← no need to receive strategies as prop anymo
                             color="white"
                         />
                         <Text style={styles.followText}>
-                            {item.isFollowing ? 'Following' : 'Follow'}
+                            {item.followerCount || 0} {item.isFollowing ? 'Following' : 'Follow'}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -70,7 +70,7 @@ const StrategyList = () => {  // ← no need to receive strategies as prop anymo
                     ))}
                 </View>
 
-                <View style={styles.statsRow}>
+                {/* <View style={styles.statsRow}>
                     <View style={styles.stat}>
                         <Text style={styles.statValue}>{item.followerCount || 0}</Text>
                         <Text style={styles.statLabel}>Followers</Text>
@@ -79,7 +79,7 @@ const StrategyList = () => {  // ← no need to receive strategies as prop anymo
                         <Text style={styles.statValue}>N/A</Text>
                         <Text style={styles.statLabel}>Avg Return</Text>
                     </View>
-                </View>
+                </View> */}
             </View>
         </TouchableOpacity>
     );

@@ -4,9 +4,10 @@ import IndexCard from '@/components/IndexCard';
 import { useContext, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { AlgoTradingContext } from "@/context/AlgoTradingContext";
+import { formatCurrency, formatPercent, formatCompactNumber } from '@/utils/numberFormatter';
 
 const AlgoTrading = () => {
-    const {algotradingData } = useContext(AlgoTradingContext);
+    const { algotradingData } = useContext(AlgoTradingContext);
 
     const summary = algotradingData?.summary;
     const activeStrategies = algotradingData?.activeStrategies;
@@ -23,7 +24,7 @@ const AlgoTrading = () => {
                 {
                     id: 'total-portfolio',
                     label: 'Total P&L',
-                    value: summary?.totalPL ?? 0,
+                    value: formatCurrency(summary?.totalPL),
                     changeColor: '#34C759',
                     iconColor: '#4ade80',
                     icon: 'dollar',

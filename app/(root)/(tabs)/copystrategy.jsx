@@ -3,25 +3,28 @@ import HomeHeader from '@/components/HomeHeader';
 import RecentCopyTrades from '@/components/RecentCopyTrades';
 import StrategyList from '@/components/StrategyList';
 import IndexCard from '@/components/IndexCard';
-import { useState } from 'react';
+import { useState, useContext, useMemo } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { CopyStrategyContext } from '@/context/CopyStrategyContext';
+import { formatCurrency, formatPercent, formatCompactNumber } from '@/utils/numberFormatter';
 
 const CopyStrategy = () => {
-    // console.log('copyStrategyData', strategies);
-    const [data] = useState({
+    const { dashboardMetrics } = useContext(CopyStrategyContext);
+    // console.log('dashboardMetrics', dashboardMetrics);
+    const data = useMemo(() => ({
         dashboardMetrics: [
             {
                 id: 'total-portfolio',
-                label: 'Copy Trading P&L',
-                // value: copystats?.copyTradingPnL,
+                label: 'Trading P&L',
+                value: formatCurrency(dashboardMetrics?.tradingPnL) ?? 0,
                 changeColor: '#34C759',
                 iconColor: '#4ade80',
                 icon: 'line-chart',
             },
             {
-                id: 'active-strategies',
-                label: 'Followed Traders',
-                // value: copystats?.followedTraders,
+                id: 'active-following',
+                label: 'Following',
+                value: dashboardMetrics?.following ?? 0,
                 changeColor: '#34C759',
                 iconColor: '#60a5fa',
                 icon: 'users',
@@ -29,21 +32,21 @@ const CopyStrategy = () => {
             {
                 id: 'win-rate',
                 label: 'Success Rate',
-                // value: copystats?.successRate,
+                value: `${dashboardMetrics?.successRate ?? 0}%`,
                 changeColor: '#34C759',
                 iconColor: '#facc15',
                 icon: 'trophy',
             },
             {
-                id: 'max-drawdown',
-                label: 'Copied Trades',
-                // value: copystats?.copiedTrades,
+                id: 'total-strategies',
+                label: 'Total Strategies',
+                value: dashboardMetrics?.totalStrategies ?? 0,
                 changeColor: '#FF3B15',
                 iconColor: '#c084fc',
                 icon: 'activity',
             },
         ],
-    });
+    }), [dashboardMetrics]);
 
     const [refreshing, setRefreshing] = useState(false);
 
@@ -51,7 +54,7 @@ const CopyStrategy = () => {
         { id: '1', component: <IndexCard data={data} page="algo" /> },
         { id: '2', component: <StrategyList /> },
         // { id: '3', component: <RecentCopyTrades recentCopyTrades={recentCopyTrades} /> },
-        { id: '4', component: <CopyTradingPerformance /> },
+        // { id: '4', component: <CopyTradingPerformance /> },
     ];
 
     const renderItem = ({ item }) => (

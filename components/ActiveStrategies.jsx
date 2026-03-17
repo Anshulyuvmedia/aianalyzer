@@ -6,7 +6,7 @@ import { CopyStrategyContext } from '@/context/CopyStrategyContext';
 import { router } from 'expo-router';
 
 const ActiveStrategies = () => {
-    const { strategies, toggleFollow } = useContext(CopyStrategyContext);
+    const { strategies, toggleFollow, updateStategyStatus } = useContext(CopyStrategyContext);
     const [activeStrategies, setActiveStrategies] = useState([]);
 
     // Filter only followed strategies (assuming isFollowing exists)
@@ -14,30 +14,39 @@ const ActiveStrategies = () => {
         if (strategies?.length > 0) {
             const followed = strategies.filter(s => s.isFollowing === true);
             // Add local UI state if backend doesn't provide status yet
-            const withStatus = followed.map(s => ({
-                ...s,
-                status: s.status || 'Active',           // can come from backend later
-                statusColor: s.status === 'Paused' ? '#92400e' : '#14532d',
-            }));
+            const withStatus = followed.map(s => {
+                const status = s.status || 'Paused';
+
+                return {
+                    ...s,
+                    status,
+                    statusColor: status === 'Active' ? '#14532d' : '#92400e',
+                };
+            });
             setActiveStrategies(withStatus);
         }
     }, [strategies]);
 
     const handleToggleStatus = (strategyId) => {
+        const strategy = activeStrategies.find(s => s._id === strategyId);
+
+        if (!strategy) return;
+
+        const newStatus = strategy.status === 'Active' ? 'Paused' : 'Active';
+
         setActiveStrategies(prev =>
             prev.map(s =>
                 s._id === strategyId
                     ? {
                         ...s,
-                        status: s.status === 'Active' ? 'Paused' : 'Active',
-                        statusColor: s.status === 'Active' ? '#92400e' : '#14532d',
+                        status: newStatus,
+                        statusColor: newStatus === 'Active' ? '#14532d' : '#92400e',
                     }
                     : s
             )
         );
 
-        // TODO: Call real API to pause/resume strategy
-        // e.g. api.post(`/strategies/${strategyId}/status`, { status: newStatus })
+        updateStategyStatus(strategyId, newStatus);
     };
 
     const handleUnfollow = (strategyId, name) => {
@@ -112,7 +121,8 @@ const ActiveStrategies = () => {
 
                     {/* Strategy Cards */}
                     {activeStrategies.map(strategy => (
-                        <TouchableOpacity key={strategy._id} style={styles.strategyCard} onPress={() => handleViewPerformance(strategy._id)}>
+                        <TouchableOpacity key={strategy._id} style={styles.strategyCard}
+                            onPress={() => handleViewPerformance(strategy._id)}>
                             <View style={styles.strategyHeader}>
                                 <View style={styles.strategyMainInfo}>
                                     <Text style={styles.strategyName}>{strategy.name}</Text>
@@ -135,7 +145,10 @@ const ActiveStrategies = () => {
                                     {/* Play/Pause icon */}
                                     <TouchableOpacity
                                         style={styles.controlButton}
-                                        onPress={() => handleToggleStatus(strategy._id)}
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            handleToggleStatus(strategy._id);
+                                        }}
                                     >
                                         <Ionicons
                                             name={strategy.status === 'Active' ? 'pause' : 'play'}
@@ -147,7 +160,10 @@ const ActiveStrategies = () => {
                                     {/* Unfollow */}
                                     <TouchableOpacity
                                         style={styles.controlButton}
-                                        onPress={() => handleUnfollow(strategy._id, strategy.name)}
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            handleUnfollow(strategy._id, strategy.name);
+                                        }}
                                     >
                                         <MaterialCommunityIcons name="account-minus" size={22} color="#f87171" />
                                     </TouchableOpacity>

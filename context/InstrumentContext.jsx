@@ -1,97 +1,96 @@
 // contexts/InstrumentContext.js
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-
-import { API_BASE_URL } from '@/config/api';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import api from '@/lib/axios';
 
 const InstrumentContext = createContext();
 
 export const InstrumentProvider = ({ children }) => {
     const [instrumentsByType, setInstrumentsByType] = useState({
-        stocks: [],
-        forex_pairs: [],
-        cryptocurrencies: [],
+        forex: [],           // start empty – we'll fill it immediately
+        crypto: [],
         commodities: [],
+        indices: [],
+        stocks: [],
+        other: [],
     });
 
     const [loadingTypes, setLoadingTypes] = useState({});
     const [error, setError] = useState(null);
     const [selectedInstrument, setSelectedInstrument] = useState(null);
     const [watchlist, setWatchlist] = useState([]);
-
-    // ── NEW: Quote state ───────────────────────────────────────────────
+    const [symbolSpecs, setSymbolSpecs] = useState({});
+    // Quote state
     const [quoteData, setQuoteData] = useState(null);
     const [quoteLoading, setQuoteLoading] = useState(false);
     const [quoteError, setQuoteError] = useState(null);
-
-    // Placeholder logo
+    const fetchInProgress = useRef(new Set());
+    // Simple placeholder logo (still useful when no real icon available)
     const getLogoUrl = useCallback((instrument) => {
-        const symbol = instrument?.symbol || '?';
-        const firstLetter = symbol.trim().charAt(0).toUpperCase() || '?';
+        const symbol =
+            typeof instrument === "string"
+                ? instrument
+                : instrument?.symbol || "?";
+
+        const firstLetter = String(symbol).trim().charAt(0).toUpperCase() || "?";
 
         const width = 56;
         const height = 56;
-        const bgColor = '0F172A';
-        const textColor = '00ff9d';
-        const font = 'roboto';
+        const bgColor = "0F172A";
+        const textColor = "00ff9d";
+        const font = "roboto";
 
         return `https://placehold.co/${width}x${height}/${bgColor}/${textColor}.png?text=${firstLetter}&font=${font}`;
     }, []);
 
-    // Fetch list of instruments
-    const fetchInstruments = useCallback(
-        async (type = 'stocks', options = {}) => {
-            const { forceRefresh = false } = options;
+    // Fetch list of instruments from broker via MetaApi
+    const fetchInstruments = useCallback(async (type = 'forex', options = {}) => {
+        const { forceRefresh = false } = options;
 
-            if (!forceRefresh && instrumentsByType[type]?.length > 0) {
-                console.log(`Using cached ${type} data (${instrumentsByType[type].length} items)`);
-                return instrumentsByType[type];
+        const normType = type.toLowerCase().trim();
+
+        // Skip if already loaded and not forced
+        if (!forceRefresh && instrumentsByType[normType]?.length > 0) {
+            return instrumentsByType[normType];
+        }
+
+        // Prevent duplicate simultaneous calls for same type
+        if (fetchInProgress.current.has(normType)) {
+            console.log(`Fetch for ${normType} already in progress – skipping`);
+            return instrumentsByType[normType] || [];
+        }
+
+        fetchInProgress.current.add(normType);
+        setLoadingTypes(prev => ({ ...prev, [normType]: true }));
+
+        try {
+            const response = await api.get(`/api/appdata/instruments`, {
+                params: { type: normType, limit: 20 }
+            });
+
+            if (!response.data?.success) {
+                throw new Error(response.data?.error || 'API failed');
             }
 
-            setLoadingTypes((prev) => ({ ...prev, [type]: true }));
-            setError(null);
+            const data = response.data.data || [];
 
-            try {
-                const params = { type };
+            setInstrumentsByType(prev => ({
+                ...prev,
+                [normType]: data
+            }));
 
-                if (type === 'stocks') {
-                    params.exchange = 'NASDAQ';
-                }
+            return data;
+        } catch (err) {
+            console.error(`Fetch ${normType} failed:`, err);
+            return instrumentsByType[normType] || [];
+        } finally {
+            setLoadingTypes(prev => ({ ...prev, [normType]: false }));
+            fetchInProgress.current.delete(normType);
+        }
+    }, [instrumentsByType]);
 
-                const response = await axios.get(`${API_BASE_URL}/api/appdata/list-instruments`, {
-                    params,
-                });
-
-                if (!response.data?.success) {
-                    throw new Error(response.data?.message || 'API returned failure');
-                }
-
-                const data = response.data.data || [];
-                setInstrumentsByType((prev) => ({
-                    ...prev,
-                    [type]: data,
-                }));
-
-                console.log(`Loaded ${data.length} ${type} instruments`);
-                return data;
-            } catch (err) {
-                const msg = err.response?.data?.message || err.message || `Failed to load ${type}`;
-                setError(msg);
-                console.error(`Fetch ${type} failed:`, err);
-                return [];
-            } finally {
-                setLoadingTypes((prev) => ({ ...prev, [type]: false }));
-            }
-        },
-        [instrumentsByType]
-    );
-
-    // Preload
+    // Preload important categories
     useEffect(() => {
-        fetchInstruments('stocks');
-        fetchInstruments('cryptocurrencies');
-        fetchInstruments('forex_pairs');
-        fetchInstruments('commodities');
+        fetchInstruments('forex');
     }, [fetchInstruments]);
 
     // Toggle watchlist
@@ -105,34 +104,61 @@ export const InstrumentProvider = ({ children }) => {
         });
     }, []);
 
-    // Fetch single instrument details & set as selected
+    // Optional: fetch more details if needed (but often not necessary with MetaApi)
     const fetchInstrumentDetails = useCallback(
-        async (symbol, type = 'stocks') => {
-            try {
-                const response = await axios.get(`${API_BASE_URL}/api/appdata/list-instruments`, {
-                    params: {
-                        type,
-                        symbol,
-                    },
-                });
+        async (symbol) => {
+            // For now — just find in cache or set directly
+            // You can extend later to call getSymbolSpecification if you add that endpoint
+            const allLoaded = [
+                ...instrumentsByType.forex,
+                ...instrumentsByType.crypto,
+                ...instrumentsByType.commodities,
+                ...instrumentsByType.indices,
+                ...instrumentsByType.stocks,
+            ];
 
-                if (response.data?.success && response.data.data?.length > 0) {
-                    const item = response.data.data[0];
-                    setSelectedInstrument(item);
-                    return item;
-                }
-                setSelectedInstrument(null);
-                return null;
-            } catch (err) {
-                console.error(`Failed to fetch details for ${symbol}:`, err);
-                setSelectedInstrument(null);
-                return null;
+            const found = allLoaded.find(i => i.symbol === symbol);
+            if (found) {
+                setSelectedInstrument(found);
+                return found;
             }
+
+            // Fallback: just use symbol
+            const minimal = { symbol, name: symbol };
+            setSelectedInstrument(minimal);
+            return minimal;
         },
-        []
+        [instrumentsByType]
     );
 
-    // ── NEW: Centralized quote fetch ───────────────────────────────────
+    const fetchSymbolSpecification = useCallback(async (symbol) => {
+
+        if (symbolSpecs[symbol]) return symbolSpecs[symbol];
+
+        try {
+
+            const response = await api.get('/api/appdata/instrument-spec', {
+                params: { symbol }
+            });
+
+            if (response.data?.success) {
+
+                setSymbolSpecs(prev => ({
+                    ...prev,
+                    [symbol]: response.data.data
+                }));
+
+                return response.data.data;
+            }
+
+        } catch (err) {
+
+            console.error("spec fetch failed", err);
+        }
+
+    }, [symbolSpecs]);
+
+    // Fetch real-time quote (bid/ask) from broker
     const fetchQuote = useCallback(async (symbol) => {
         if (!symbol) {
             setQuoteError('No symbol provided');
@@ -144,43 +170,33 @@ export const InstrumentProvider = ({ children }) => {
         setQuoteData(null);
 
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/appdata/quote`, {
-                params: { symbol },
+            const response = await api.get(`/api/appdata/quote`, {
+                params: { symbol: symbol.trim() },
             });
 
-            if (response.data?.success) {
-                setQuoteData(response.data.data);
-            } else {
-                throw new Error(response.data?.message || 'Failed to fetch quote');
-            }
-        } catch (err) {
-            let msg = err.message || 'Failed to load quote';
+            if (response.data?.success && response.data.data) {
+                const q = response.data.data;
 
-            // Broader fallback on 500 or credit errors
-            if (err.response?.status === 500 || msg.includes('API credits') || msg.includes('quota')) {
-                msg = 'Quote service unavailable (quota or server issue). Showing demo data.';
-                setQuoteError(msg);
-
-                const dummyQuote = {
-                    symbol: symbol.toUpperCase(),
-                    name: selectedInstrument?.name || 'Unknown Instrument',
-                    exchange: selectedInstrument?.exchange || '—',
-                    currency: 'USD',
-                    datetime: new Date().toISOString().slice(0, 19).replace('T', ' '),
-                    close: (Math.random() * 200 + 50).toFixed(2),
-                    change: (Math.random() * 10 - 5).toFixed(2),
-                    percent_change: (Math.random() * 8 - 4).toFixed(2),
-                    previous_close: (Math.random() * 200 + 50).toFixed(2),
-                    volume: Math.floor(Math.random() * 1e8 + 1e6),
-                    is_market_open: false,
+                // Normalize to something frontend-friendly
+                const normalized = {
+                    symbol: q.symbol,
+                    bid: q.bid,
+                    ask: q.ask,
+                    last: q.last || ((q.bid + q.ask) / 2).toFixed(5),
+                    spread: q.spread || (q.ask - q.bid).toFixed(5),
+                    timestamp: q.timestamp || new Date().toISOString(),
+                    // Add more if your backend sends them later
                 };
 
-                setQuoteData(dummyQuote); // This must run
-                console.warn(`Quote failed for ${symbol} — dummy data set:`, dummyQuote.close);
+                setQuoteData(normalized);
             } else {
-                setQuoteError(msg);
-                console.error('Quote fetch failed:', err);
+                throw new Error(response.data?.error || 'Failed to fetch quote');
             }
+        } catch (err) {
+            const msg = err.response?.data?.error || err.message || 'Failed to load quote';
+            setQuoteError(msg);
+            console.error(`Quote fetch failed for ${symbol}:`, err);
+            setQuoteData(null);
         } finally {
             setQuoteLoading(false);
         }
@@ -188,8 +204,25 @@ export const InstrumentProvider = ({ children }) => {
 
     const clearSelectedInstrument = useCallback(() => {
         setSelectedInstrument(null);
-        setQuoteData(null);        // also clear quote when deselecting
+        setQuoteData(null);
         setQuoteError(null);
+    }, []);
+
+    //-----------------------------------------------------------------------
+    const placeOrder = useCallback(async (order) => {
+        try {
+            const response = await api.post('/api/appdata/place-order', order);
+
+            if (response.data?.success) {
+                return response.data;
+            }
+
+            throw new Error(response.data?.error || "Order failed");
+
+        } catch (err) {
+            console.error("Order placement failed:", err);
+            throw err;
+        }
     }, []);
 
     const value = {
@@ -204,12 +237,13 @@ export const InstrumentProvider = ({ children }) => {
         clearSelectedInstrument,
         watchlist,
         toggleWatchlist,
-
-        // ── NEW exports for quote ──────────────────────────────────────
+        fetchSymbolSpecification,
+        symbolSpecs,
         quoteData,
         quoteLoading,
         quoteError,
         fetchQuote,
+        placeOrder,
     };
 
     return (

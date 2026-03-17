@@ -16,6 +16,8 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="Discovery/InstrumentList" options={{ headerShown: false }} />
             <Stack.Screen name="Discovery/[symbol]" options={{ headerShown: false }} />
             <Stack.Screen name="Discovery/placeOrder" options={{ headerShown: false }} />
+            <Stack.Screen name="Portfolio/PositionsScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="Portfolio/OrdersScreen" options={{ headerShown: false }} />
         </Stack>
     );
 }

@@ -6,15 +6,18 @@ import api from '@/lib/axios';
 export const CopyStrategyContext = createContext();
 
 export const CopyStrategyProvider = ({ children }) => {
-    const [strategies, setStrategies] = useState([]); // better name
+    const [strategies, setStrategies] = useState([]);
+    const [backtests, setBacktests] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [dashboardMetrics, setDashboardMetrics] = useState(null);
+    const [strategyStatus, setStrategyStatus] = useState(null);
 
     const fetchStrategies = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await api.get('/api/appData/public-strategies');
+            const response = await api.get('/api/appdata/public-strategies');
             const data = response.data.data || [];
 
             setStrategies(data);
@@ -48,6 +51,54 @@ export const CopyStrategyProvider = ({ children }) => {
         }
     }, []);
 
+    const fetchStrategyBacktest = useCallback(async (strategyId) => {
+        if (!strategyId) return;
+
+        // Already loading or loaded?
+        if (backtests[strategyId] !== undefined) return;
+        // console.log('strategyId: ', strategyId);
+        try {
+            // Mark as loading (optional – you can also use a separate loading map)
+            setBacktests((prev) => ({ ...prev, [strategyId]: null })); // null = loading
+
+            const res = await api.get(`/api/appdata/strategies/${strategyId}/backtest`);
+
+            const backtestData = res.data?.data || res.data || null;
+
+            setBacktests((prev) => ({
+                ...prev,
+                [strategyId]: backtestData,
+            }));
+
+            // Optional: also cache individually
+            if (backtestData) {
+                await AsyncStorage.setItem(
+                    `backtest_${strategyId}`,
+                    JSON.stringify(backtestData)
+                );
+            }
+        } catch (err) {
+            console.error(`Failed to fetch backtest for ${strategyId}:`, err);
+
+            let msg = 'Failed to load backtest results';
+            if (err.response?.status === 404) {
+                msg = 'No backtest available for this strategy';
+            }
+
+            // Set to null = no data / error
+            setBacktests((prev) => ({ ...prev, [strategyId]: null }));
+
+            // Optional: try cache fallback
+            const cached = await AsyncStorage.getItem(`backtest_${strategyId}`);
+            if (cached) {
+                setBacktests((prev) => ({
+                    ...prev,
+                    [strategyId]: JSON.parse(cached),
+                }));
+            }
+        }
+    }, []);
+
     const toggleFollow = useCallback(async (strategyId, shouldFollow) => {
         try {
             setLoading(true);
@@ -56,7 +107,7 @@ export const CopyStrategyProvider = ({ children }) => {
             const action = shouldFollow ? 'follow' : 'unfollow';
 
             // Fix 1: correct endpoint path (adjust if your baseURL includes /api)
-            const res = await api.post(`/api/appData/strategies/${strategyId}/follow`, { action });
+            const res = await api.post(`/api/appdata/strategies/${strategyId}/follow`, { action });
             // console.log('Follow API response:', res.data);
 
             // Fix 2: Safely extract values (both response shapes have these fields)
@@ -93,9 +144,56 @@ export const CopyStrategyProvider = ({ children }) => {
         }
     }, []);
 
+    const fetchDashboardMetrics = useCallback(async () => {
+        try {
+            const res = await api.get('/api/appdata/dashboard-metrics');
+            // console.log('res', res.data);
+            const metrics = res.data?.data || null;
+
+            setDashboardMetrics(metrics);
+
+            // cache
+            if (metrics) {
+                await AsyncStorage.setItem(
+                    'dashboardMetricsCache',
+                    JSON.stringify(metrics)
+                );
+            }
+
+        } catch (err) {
+            console.error('Failed to fetch dashboard metrics:', err);
+
+            // fallback cache
+            const cached = await AsyncStorage.getItem('dashboardMetricsCache');
+            if (cached) {
+                setDashboardMetrics(JSON.parse(cached));
+            }
+        }
+    }, []);
+
+    const updateStategyStatus = useCallback(async (strategyId, newStatus) => {
+        try {
+            await api.post(`/api/appdata/strategies/${strategyId}/status`, {
+                status: newStatus
+            });
+
+            setStrategies(prev =>
+                prev.map(s =>
+                    s._id === strategyId
+                        ? { ...s, status: newStatus }
+                        : s
+                )
+            );
+
+        } catch (err) {
+            console.error('Failed to update Strategy Status:', err.response?.data || err.message);
+        }
+    }, []);
+
     useEffect(() => {
         fetchStrategies();
-    }, [fetchStrategies]);
+        fetchDashboardMetrics();
+    }, [fetchStrategies, fetchDashboardMetrics]);
 
     return (
         <CopyStrategyContext.Provider
@@ -105,6 +203,11 @@ export const CopyStrategyProvider = ({ children }) => {
                 error,
                 toggleFollow,
                 refreshStrategies: fetchStrategies,
+                backtests,
+                fetchStrategyBacktest,
+                dashboardMetrics,
+                fetchDashboardMetrics,
+                updateStategyStatus
             }}
         >
             {children}

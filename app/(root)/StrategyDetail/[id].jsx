@@ -1,46 +1,52 @@
 import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import HomeHeader from '@/components/HomeHeader';
 import { useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RecentCopyTrades from '@/components/RecentCopyTrades';
+import { CopyStrategyContext } from '@/context/CopyStrategyContext';
 
 const StrategyDetails = () => {
     const { id } = useLocalSearchParams();
+    const { strategies, backtests, fetchStrategyBacktest } = useContext(CopyStrategyContext);
     const [strategy, setStrategy] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const loadStrategy = async () => {
+        const loadData = async () => {
             try {
                 setLoading(true);
                 setError(null);
 
+                // 1. Try to get strategy from cache (fast path)
                 const cached = await AsyncStorage.getItem('copyStrategiesCache');
-                if (!cached) throw new Error('No cached strategies found');
+                if (cached) {
+                    const all = JSON.parse(cached);
+                    const found = all?.find(s => s._id === id);
+                    if (found) setStrategy(found);
+                }
 
-                const allStrategies = JSON.parse(cached);
-                if (!Array.isArray(allStrategies)) throw new Error('Invalid cache format');
+                // 2. Ensure backtest is being fetched (context handles caching & loading)
+                fetchStrategyBacktest(id);
 
-                const found = allStrategies.find(s => s._id === id);
-                if (!found) throw new Error('Strategy not found');
-
-                setStrategy(found);
             } catch (err) {
-                console.error('Strategy load error:', err);
-                setError(err.message || 'Failed to load strategy details');
+                console.error('Load error:', err);
+                setError(err.message || 'Failed to load strategy');
             } finally {
                 setLoading(false);
             }
         };
 
-        if (id) loadStrategy();
-    }, [id]);
+        if (id) loadData();
+    }, [id, fetchStrategyBacktest]);
 
-    if (loading) {
+    const backtestData = backtests[id];
+    const actualBacktest = backtestData?.backtest ?? null;
+    // console.log('Backtest data from context for id', id, ':', backtests[id]);
+    if (loading || !strategy) {
         return (
             <View style={styles.safeArea}>
                 <HomeHeader page="home" title="Strategy Details" />
@@ -52,14 +58,14 @@ const StrategyDetails = () => {
         );
     }
 
-    if (error || !strategy) {
+    if (error) {
         return (
             <View style={styles.safeArea}>
                 <HomeHeader page="home" title="Strategy Details" />
                 <View style={styles.center}>
                     <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
                     <Text style={styles.errorTitle}>Oops!</Text>
-                    <Text style={styles.errorText}>{error || 'Strategy not found'}</Text>
+                    <Text style={styles.errorText}>{error}</Text>
                 </View>
             </View>
         );
@@ -69,9 +75,9 @@ const StrategyDetails = () => {
     // Prepare FlatList data (sections as items)
     // ──────────────────────────────────────────────
     const listData = [
+        { type: 'backtest', backtest: actualBacktest },
         { type: 'core-info', strategy },
         { type: 'trading-params', strategy },
-        { type: 'backtest', strategy },
     ];
 
     const renderItem = ({ item }) => {
@@ -121,12 +127,7 @@ const StrategyDetails = () => {
                 );
 
             case 'backtest':
-                return (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Backtesting Result</Text>
-                        <RecentCopyTrades />
-                    </View>
-                );
+                return <BacktestSection backtest={item.backtest} />;
 
             default:
                 return null;
@@ -134,10 +135,7 @@ const StrategyDetails = () => {
     };
 
     const HeaderComponent = () => (
-        <LinearGradient
-            colors={['#000000', '#1e293b']}
-            style={styles.headerCard}
-        >
+        <LinearGradient colors={['#000000', '#1e293b']} style={styles.headerCard}>
             <Text style={styles.strategyName}>{strategy.name}</Text>
             <Text style={styles.strategyDescription}>
                 {strategy.description || 'No description available'}
@@ -156,8 +154,6 @@ const StrategyDetails = () => {
         </LinearGradient>
     );
 
-    const keyExtractor = (_, index) => `section-${index}`;
-
     return (
         <View style={styles.safeArea}>
             <HomeHeader page="chatbot" title="Strategy Details" subtitle="Complete detail for strategies" />
@@ -165,7 +161,7 @@ const StrategyDetails = () => {
             <FlatList
                 data={listData}
                 renderItem={renderItem}
-                keyExtractor={keyExtractor}
+                keyExtractor={(_, index) => `section-${index}`}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.flatListContent}
                 ListHeaderComponent={HeaderComponent}
@@ -175,7 +171,141 @@ const StrategyDetails = () => {
     );
 };
 
-// InfoRow component remains unchanged
+// ──────────────────────────────────────────────
+// New Backtest display component
+// ──────────────────────────────────────────────
+const BacktestSection = ({ backtest }) => {
+    // console.log('[BacktestSection] Received backtest prop:', backtest);
+
+    // Loading state
+    if (backtest === undefined) {
+        return (
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Backtesting Result</Text>
+                <View style={styles.infoCard}>
+                    <View style={{ padding: 40, alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color="#10B981" />
+                        <Text style={{ color: '#94a3b8', marginTop: 12 }}>
+                            Loading backtest results...
+                        </Text>
+                    </View>
+                </View>
+            </View>
+        );
+    }
+
+    // No data / empty object
+    if (!backtest || typeof backtest !== 'object' || Object.keys(backtest).length === 0) {
+        return (
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Backtesting Result</Text>
+                <View style={styles.infoCard}>
+                    <View style={{ padding: 32, alignItems: 'center' }}>
+                        <MaterialCommunityIcons name="chart-line-stacked" size={48} color="#4B5563" />
+                        <Text style={{ color: '#9CA3AF', fontSize: 16, marginTop: 12, textAlign: 'center' }}>
+                            No backtest results available yet
+                        </Text>
+                    </View>
+                </View>
+            </View>
+        );
+    }
+
+    // Data exists — extract safely
+    const m = backtest.metrics || {};
+    const config = backtest.config || {};
+    const tradesCount = backtest.totalTrades || m.totalTrades || 0;
+    const isNegative = (m.totalPnL || 0) < 0;
+
+    const fromDate = config.dateRange?.from ? new Date(config.dateRange.from) : null;
+    const toDate = config.dateRange?.to ? new Date(config.dateRange.to) : null;
+
+    return (
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Backtesting Result</Text>
+            <View style={styles.infoCard}>
+                {/* Period & Capital */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <View>
+                        <Text style={{ color: '#94a3b8', fontSize: 13 }}>Test Period</Text>
+                        <Text style={{ color: '#f1f5f9', fontWeight: '600' }}>
+                            {fromDate ? fromDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} –{' '}
+                            {toDate ? toDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={{ color: '#94a3b8', fontSize: 13 }}>Initial Capital</Text>
+                        <Text style={{ color: '#10B981', fontWeight: '700' }}>
+                            ${config.initialCapital?.toLocaleString() || 'N/A'}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Metrics Grid */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                    <MetricCard
+                        label="Net Profit"
+                        value={m.totalPnL != null ? `$${m.totalPnL.toFixed(2)}` : '—'}
+                        color={isNegative ? '#EF4444' : '#10B981'}
+                    />
+                    <MetricCard
+                        label="Max Drawdown"
+                        value={m.maxDrawdownPercent != null ? `${m.maxDrawdownPercent.toFixed(2)}%` : '—'}
+                        color="#EF4444"
+                    />
+                    <MetricCard
+                        label="Win Rate"
+                        value={m.winRatePercent != null ? `${m.winRatePercent.toFixed(1)}%` : '—'}
+                        color="#3B82F6"
+                    />
+                    <MetricCard
+                        label="Total Trades"
+                        value={tradesCount}
+                        color="#60A5FA"
+                    />
+                </View>
+
+                {tradesCount > 0 && tradesCount <= 5 && (
+                    <Text style={{ color: '#FBBF24', fontSize: 13, marginTop: 16, textAlign: 'center' }}>
+                        Only {tradesCount} trade{tradesCount > 1 ? 's' : ''} — limited sample size
+                    </Text>
+                )}
+
+                <Text style={{ color: '#6B7280', fontSize: 12, marginTop: 20, textAlign: 'center', lineHeight: 18 }}>
+                    Simulated backtest • Past performance does not guarantee future results
+                </Text>
+            </View>
+        </View>
+    );
+};
+
+const MetricCard = ({ label, value, color }) => (
+    <View
+        style={{
+            flex: 1,
+            minWidth: '45%',
+            backgroundColor: '#111827',
+            borderRadius: 12,
+            padding: 12,
+            borderLeftWidth: 4,
+            borderLeftColor: color,
+        }}
+    >
+        <Text style={{ color: '#9CA3AF', fontSize: 13 }}>{label}</Text>
+        <Text
+            style={{
+                color: color === '#EF4444' && value.startsWith('-') ? '#EF4444' : '#f1f5f9',
+                fontSize: 18,
+                fontWeight: '700',
+                marginTop: 4,
+            }}
+        >
+            {value}
+        </Text>
+    </View>
+);
+
+// InfoRow remains unchanged
 const InfoRow = ({ icon, label, value, valueStyle }) => (
     <View style={styles.infoRow}>
         <View style={styles.iconContainer}>
@@ -289,7 +419,7 @@ const styles = StyleSheet.create({
     infoCard: {
         backgroundColor: '#1e293b',
         borderRadius: 16,
-        padding: 4,
+        padding: 16,          // increased padding for better spacing
         borderWidth: 1,
         borderColor: '#334155',
     },

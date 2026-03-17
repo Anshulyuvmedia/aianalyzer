@@ -1,10 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { FontAwesome, Feather } from '@expo/vector-icons';
 import LinearGradient from 'react-native-linear-gradient';
 import PropTypes from 'prop-types';
 
+
 const IndexCard = ({ data, page }) => {
+
     return (
         <View style={styles.container}>
             <View style={styles.cardGrid}>
@@ -37,7 +39,11 @@ const IndexCard = ({ data, page }) => {
                                     )}
                                     <View style={styles.cardBody}>
                                         <View>
-                                            <Text style={[styles.cardValue, { color: metric.iconColor }]}>{metric.value}</Text>
+                                            <Text style={[styles.cardValue, { color: metric.iconColor }]}>
+                                                {typeof metric.value === 'number'
+                                                    ? metric.value.toFixed(0)
+                                                    : metric.value}
+                                            </Text>
                                             <Text style={styles.cardLabel}>{metric.label}</Text>
                                         </View>
                                         {page === 'algo' && (

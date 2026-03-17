@@ -9,10 +9,8 @@ const BrokerConnection = () => {
     const { referralData } = useContext(ReferralsContext);
     const [refreshing, setRefreshing] = useState(false);
     const components = [
-        { id: '1', component: <ReferralAccess referralData={referralData} /> },
-        // { id: '2', component: <APIConfiguration /> },
-        { id: '3', component: <SupportedBrokers /> },
-
+        { id: '1', component: <SupportedBrokers /> },
+        { id: '2', component: <ReferralAccess referralData={referralData} /> },
     ];
     const renderItem = ({ item }) => (
         <View style={styles.section}>

@@ -1,109 +1,92 @@
 // screens/InstrumentList.js
 import React, { useState, useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, Image, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, Image, TouchableOpacity, TextInput, ScrollView, } from 'react-native';
 import HomeHeader from '@/components/HomeHeader';
 import { useInstruments } from '@/context/InstrumentContext';
 import { useRouter } from 'expo-router';
 
-const TAB_TYPES = ['stocks', 'forex_pairs', 'cryptocurrencies', 'commodities'];
+const TAB_TYPES = ['forex', 'crypto', 'commodities', 'stocks', 'indices', 'other'];
 
 const InstrumentList = () => {
-    const {
-        instrumentsByType,
-        loading,
-        error,
-        fetchInstruments,
-        setSelectedInstrument,
-        getLogoUrl,
-    } = useInstruments();
+    const { instrumentsByType, loading, error, fetchInstruments, setSelectedInstrument, getLogoUrl } = useInstruments();
+
     const router = useRouter();
+
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedType, setSelectedType] = useState('stocks');
+    const [selectedType, setSelectedType] = useState('forex'); // start with forex – most common
+
     const scrollViewRef = useRef(null);
 
     const handleTypeChange = useCallback(
         (type) => {
             setSelectedType(type);
-            fetchInstruments(type);
+            if (!instrumentsByType[type]?.length && !loading[type]) {
+                fetchInstruments(type);
+            }
         },
-        [fetchInstruments]
+        [fetchInstruments, instrumentsByType]
     );
 
     const instruments = instrumentsByType[selectedType] || [];
 
-    const filtered = instruments.filter(
-        (item) =>
-            item.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (item.name || item.instrument_name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    const filtered = instruments.filter(item =>
+        item.symbol?.toLowerCase().includes(searchQuery.trim().toLowerCase())
     );
 
     const renderItem = ({ item }) => {
-        const logoUrl = getLogoUrl(item);
-        // console.log('getLogoUrl', logoUrl);
+        // console.log('item', item);
+        if (!item?.symbol) return null;
+        const logoUrl = getLogoUrl(item.symbol);
+        // For most broker symbols: symbol is both identifier and display name
+        const displayName = item.symbol;
+
+        // Simple meta – can be enhanced later if you add more data from symbol specification
+        let metaText = '—';
+
+        if (selectedType === 'forex') {
+            metaText = item.symbol.includes('JPY') ? 'Cross' : 'Major/Minor';
+        } else if (selectedType === 'crypto') {
+            metaText = 'Crypto';
+        } else if (selectedType === 'commodities') {
+            metaText = 'Commodity';
+        } else if (selectedType === 'indices') {
+            metaText = 'Index';
+        } else if (selectedType === 'stocks') {
+            metaText = 'Stock';
+        }
 
         return (
             <TouchableOpacity
                 style={styles.itemCard}
                 activeOpacity={0.7}
                 onPress={() => {
-                    setSelectedInstrument(item);  // from context
+                    setSelectedInstrument(item);
                     router.push(`/Discovery/${encodeURIComponent(item.symbol)}`);
                 }}
             >
                 <Image
                     source={{ uri: logoUrl }}
                     style={styles.logo}
-                    defaultSource={{ uri: logoUrl }}
                     resizeMode="contain"
-                    onError={(e) => {
-                        const errMsg = e.nativeEvent.error || 'Unknown image error';
-                        console.log(`Image failed for ${item.symbol}: ${logoUrl} → ${errMsg}`);
-                    }}
+                    defaultSource={{ uri: logoUrl }}
+                    onError={(e) =>
+                        console.log(`Logo failed for ${item.symbol}: ${e.nativeEvent.error}`)
+                    }
                 />
 
                 <View style={styles.itemContent}>
                     <View style={styles.itemMain}>
-                        <Text style={styles.symbol}>{item.symbol || '—'}</Text>
+                        <Text style={styles.symbol}>{item.symbol}</Text>
                         <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
-                            {(() => {
-                                // Crypto & Forex: use base/quote pair
-                                if (selectedType === 'cryptocurrencies' || selectedType === 'forex_pairs') {
-                                    const base = (item.currency_base || '?')
-                                    const quote = (item.currency_quote || '?')
-                                    return `${base}/${quote}`;
-                                }
-
-                                // Commodities & Stocks: prefer name
-                                return item.name || item.instrument_name || 'Unknown';
-                            })()}
+                            {displayName}
                         </Text>
                     </View>
 
                     <View style={styles.itemMeta}>
-                        <Text style={styles.metaText}>
-                            {(() => {
-                                // Forex: show group (Major/Minor/Exotic)
-                                if (selectedType === 'forex_pairs') {
-                                    return item.currency_group || '—';
-                                }
-
-                                // Crypto: show primary exchange
-                                if (selectedType === 'cryptocurrencies' && item.available_exchanges?.length > 0) {
-                                    return item.available_exchanges[0] + (item.available_exchanges.length > 1 ? '+' : '');
-                                }
-
-                                // Commodities: show category (very useful!)
-                                if (selectedType === 'commodities') {
-                                    return item.category || '—';
-                                }
-
-                                // Stocks/default: exchange or country
-                                return item.exchange || item.country || '—';
-                            })()}
-                        </Text>
+                        <Text style={styles.metaText}>{metaText}</Text>
                     </View>
                 </View>
-            </TouchableOpacity >
+            </TouchableOpacity>
         );
     };
 
@@ -114,7 +97,7 @@ const InstrumentList = () => {
             <HomeHeader
                 page="discovery"
                 title="Instrument Discovery"
-                subtitle="Explore stocks, forex, crypto & more"
+                subtitle="Explore available trading symbols"
             />
 
             <ScrollView
@@ -139,7 +122,7 @@ const InstrumentList = () => {
                                 selectedType === type && styles.segmentTextActive,
                             ]}
                         >
-                            {type.replace('_', ' ').toUpperCase()}
+                            {type.toUpperCase()}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -149,7 +132,7 @@ const InstrumentList = () => {
                 <View style={styles.searchWrapper}>
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search symbol or name..."
+                        placeholder="Search symbol..."
                         placeholderTextColor="#777"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
@@ -162,9 +145,7 @@ const InstrumentList = () => {
                 {isLoading ? (
                     <View style={styles.center}>
                         <ActivityIndicator size="large" color="#00ff9d" />
-                        <Text style={styles.loadingText}>
-                            Loading {selectedType.replace('_', ' ')}...
-                        </Text>
+                        <Text style={styles.loadingText}>Loading {selectedType}...</Text>
                     </View>
                 ) : error ? (
                     <View style={styles.center}>
@@ -182,20 +163,17 @@ const InstrumentList = () => {
                         style={{ flex: 1 }}
                         data={filtered}
                         renderItem={renderItem}
-                        keyExtractor={(item) =>
-                            item.symbol ||
-                            `${item.name || 'item'}-${item.exchange || item.currency_base || 'ex'}`
-                        }
+                        keyExtractor={(item) => item.symbol}
                         ListEmptyComponent={
                             <View style={styles.emptyContainer}>
                                 <Text style={styles.emptyText}>
                                     {searchQuery.trim()
                                         ? `No results for "${searchQuery}"`
-                                        : `No ${selectedType.replace('_', ' ')} available`}
+                                        : `No ${selectedType} symbols available`}
                                 </Text>
                             </View>
                         }
-                        ListFooterComponent={<View style={{ height: 60 }} />}
+                        ListFooterComponent={<View style={{ height: 80 }} />}
                         initialNumToRender={12}
                         maxToRenderPerBatch={16}
                         windowSize={15}
@@ -218,44 +196,43 @@ const styles = StyleSheet.create({
     segmentScroll: {
         backgroundColor: '#000',
         paddingVertical: 6,
-        maxHeight: 50,
+        maxHeight: 54,
     },
 
     segmentScrollContent: {
         paddingHorizontal: 16,
-        paddingVertical: 6,
-        gap: 10,
+        paddingVertical: 8,
+        gap: 12,
     },
 
     segmentButton: {
-        borderRadius: 18,
-        height: 34,
+        borderRadius: 20,
+        height: 38,
         backgroundColor: '#161A1F',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 18,
+        paddingHorizontal: 20,
     },
 
     segmentButtonActive: {
-        backgroundColor: '#1F8B4C',
+        backgroundColor: '#22C55E',
     },
 
     segmentText: {
         color: '#8B949E',
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '600',
-        letterSpacing: 0.5,
+        letterSpacing: 0.3,
     },
 
     segmentTextActive: {
-        color: '#FFFFFF',
+        color: '#000',
         fontWeight: '700',
     },
 
     searchWrapper: {
         paddingHorizontal: 16,
-        paddingTop: 6,
-        paddingBottom: 12,
+        paddingVertical: 10,
     },
 
     searchInput: {
@@ -263,8 +240,8 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         paddingVertical: 14,
         paddingHorizontal: 18,
-        borderRadius: 14,
-        fontSize: 15,
+        borderRadius: 16,
+        fontSize: 16,
     },
 
     itemContent: {
@@ -276,33 +253,33 @@ const styles = StyleSheet.create({
 
     listContent: {
         paddingHorizontal: 16,
-        paddingTop: 6,
-        paddingBottom: 60,
+        paddingTop: 4,
+        paddingBottom: 80,
     },
 
     itemCard: {
         backgroundColor: '#12161C',
-        borderRadius: 14,
+        borderRadius: 16,
         paddingVertical: 16,
         paddingHorizontal: 16,
         marginBottom: 12,
         flexDirection: 'row',
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.3,
         shadowRadius: 6,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: 4,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 5,
     },
 
     logo: {
-        width: 56,                    // match your placeholder width
+        width: 56,
         height: 56,
-        borderRadius: 28,             // perfect circle
+        borderRadius: 28,
         marginRight: 16,
-        backgroundColor: '#1E252E',   // fallback color if image fails to load
-        borderWidth: 1,               // subtle outline
-        borderColor: '#22C55E33',     // faint green border (with opacity)
+        backgroundColor: '#1E252E',
+        borderWidth: 1,
+        borderColor: '#22C55E22',
     },
 
     itemMain: {
@@ -311,69 +288,68 @@ const styles = StyleSheet.create({
 
     symbol: {
         color: '#22C55E',
-        fontSize: 17,
+        fontSize: 18,
         fontWeight: '700',
     },
 
     name: {
-        color: '#AAB2BD',
+        color: '#A1AEBB',
         fontSize: 14,
-        marginTop: 3,
+        marginTop: 2,
     },
 
     itemMeta: {
         alignItems: 'flex-end',
-        marginLeft: 12,
     },
 
     metaText: {
         color: '#6B7280',
-        fontSize: 12,
-        marginTop: 2,
+        fontSize: 13,
     },
 
     center: {
-        paddingTop: 100,
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 40,
     },
 
     emptyContainer: {
         alignItems: 'center',
-        paddingTop: 40,
-        paddingHorizontal: 20,
+        paddingTop: 80,
+        paddingHorizontal: 30,
     },
 
     emptyText: {
         color: '#6B7280',
-        fontSize: 15,
+        fontSize: 16,
         textAlign: 'center',
-        lineHeight: 22,
+        lineHeight: 24,
     },
 
     loadingText: {
-        color: '#8B949E',
-        fontSize: 15,
-        marginTop: 18,
+        color: '#A1AEBB',
+        fontSize: 16,
+        marginTop: 20,
     },
 
     errorText: {
         color: '#EF4444',
-        fontSize: 15,
+        fontSize: 16,
         textAlign: 'center',
-        marginBottom: 20,
+        marginBottom: 24,
     },
 
     retryButton: {
         backgroundColor: '#22C55E',
-        paddingVertical: 12,
-        paddingHorizontal: 36,
-        borderRadius: 10,
+        paddingVertical: 14,
+        paddingHorizontal: 40,
+        borderRadius: 12,
     },
 
     retryText: {
         color: '#000',
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '700',
     },
 });

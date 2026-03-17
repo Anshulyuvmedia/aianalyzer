@@ -4,23 +4,20 @@ import { StyleSheet, Text, View, ActivityIndicator, ScrollView, SafeAreaView, To
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useInstruments } from '@/context/InstrumentContext';
 import HomeHeader from '@/components/HomeHeader';
+import TradingChart from "@/components/TradingChart";
 
 export default function InstrumentDetail() {
     const router = useRouter();
-    const { symbol } = useLocalSearchParams();
-    const {
-        selectedInstrument,
-        fetchQuote,
-        quoteData,
-        quoteLoading,
-        quoteError,
-    } = useInstruments();
+    const params = useLocalSearchParams();
+    const symbol = Array.isArray(params.symbol) ? params.symbol[0] : params.symbol;
+    const { selectedInstrument, fetchQuote, quoteData, quoteLoading, quoteError, fetchSymbolSpecification, symbolSpecs } = useInstruments();
 
     useEffect(() => {
-        if (symbol && !quoteData) {
-            fetchQuote(symbol);
-        }
-    }, [symbol, fetchQuote, quoteData]);
+        if (!symbol) return;
+        // console.log('symbol', symbol);
+        fetchQuote(symbol);
+        fetchSymbolSpecification(symbol);
+    }, [symbol]);
 
     if (!selectedInstrument) {
         return (
@@ -34,11 +31,11 @@ export default function InstrumentDetail() {
             </SafeAreaView>
         );
     }
-
+    const spec = symbolSpecs?.[symbol] || {};
     const item = selectedInstrument;
     const displayData = { ...item, ...quoteData };
     const isDummy = quoteError && quoteError.includes('credit limit');
-
+    // console.log('spec', JSON.stringify(spec, null, 3))
     const changeValue = Number(displayData.change || 0);
     const isPositive = changeValue >= 0;
 
@@ -47,12 +44,7 @@ export default function InstrumentDetail() {
             <HomeHeader
                 page="discovery"
                 title={symbol || 'Instrument'}
-                subtitle={
-                    displayData.name ||
-                    (displayData.currency_base && displayData.currency_quote
-                        ? `${displayData.currency_base}/${displayData.currency_quote}`
-                        : 'Unknown Instrument')
-                }
+                subtitle={spec.description || 'Unknown Instrument'}
             />
 
             {isDummy && (
@@ -65,6 +57,12 @@ export default function InstrumentDetail() {
             )}
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
+
+                {/* Chart Placeholder */}
+                <View style={styles.chartCard}>
+                    {/* <Text style={styles.chartTitle}>Price History</Text> */}
+                    <TradingChart symbol={symbol} />
+                </View>
                 {/* Price Card – Hero Section */}
                 {quoteLoading ? (
                     <View style={styles.loadingContainer}>
@@ -73,33 +71,36 @@ export default function InstrumentDetail() {
                     </View>
                 ) : quoteData || quoteError ? (
                     <View style={styles.priceCard}>
+
+                        <Text style={styles.symbol}>{symbol}</Text>
+
                         <Text style={styles.price}>
-                            {displayData.close || displayData.price || '—'}
-                            <Text style={styles.currency}> {displayData.currency || 'USD'}</Text>
+                            {quoteData?.bid ?? '—'}
                         </Text>
 
-                        <View style={styles.changeRow}>
-                            <Text
-                                style={[
-                                    styles.changeText,
-                                    { color: isPositive ? '#22C55E' : '#EF4444' },
-                                ]}
-                            >
-                                {isPositive ? '+' : ''}{displayData.change || '—'}
-                            </Text>
-                            <Text
-                                style={[
-                                    styles.percentChange,
-                                    { color: isPositive ? '#22C55E' : '#EF4444' },
-                                ]}
-                            >
-                                ({isPositive ? '+' : ''}{displayData.percent_change || '—'}%)
-                            </Text>
+                        <Text style={styles.priceLabel}>Bid Price</Text>
+
+                        <View style={styles.priceRow}>
+                            <View style={styles.priceBox}>
+                                <Text style={styles.boxLabel}>Bid</Text>
+                                <Text style={styles.boxValue}>{quoteData?.bid ?? '—'}</Text>
+                            </View>
+
+                            <View style={styles.priceBox}>
+                                <Text style={styles.boxLabel}>Ask</Text>
+                                <Text style={styles.boxValue}>{quoteData?.ask ?? '—'}</Text>
+                            </View>
+
+                            <View style={styles.priceBox}>
+                                <Text style={styles.boxLabel}>Spread</Text>
+                                <Text style={styles.boxValue}>
+                                    {quoteData?.bid && quoteData?.ask
+                                        ? (quoteData.ask - quoteData.bid).toFixed(spec.digits)
+                                        : '—'}
+                                </Text>
+                            </View>
                         </View>
 
-                        <Text style={styles.timestamp}>
-                            Updated: {displayData.datetime || 'N/A'}
-                        </Text>
                     </View>
                 ) : (
                     <View style={styles.center}>
@@ -107,35 +108,18 @@ export default function InstrumentDetail() {
                     </View>
                 )}
 
+
                 {/* Instrument Meta */}
                 <View style={styles.metaCard}>
-                    <MetaRow label="Type" value={displayData.type || '—'} />
-                    <MetaRow
-                        label="Exchange / Category"
-                        value={
-                            displayData.exchange ||
-                            displayData.category ||
-                            displayData.currency_group ||
-                            '—'
-                        }
-                    />
-                    {displayData.description && (
-                        <MetaRow label="Description" value={displayData.description} />
-                    )}
-                    {displayData.available_exchanges?.length > 0 && (
-                        <MetaRow
-                            label="Exchanges"
-                            value={displayData.available_exchanges.join(', ')}
-                        />
-                    )}
-                </View>
-
-                {/* Chart Placeholder */}
-                <View style={styles.chartCard}>
-                    <Text style={styles.chartTitle}>Price History</Text>
-                    <View style={styles.chartPlaceholder}>
-                        <Text style={styles.chartPlaceholderText}>Interactive chart coming soon</Text>
-                    </View>
+                    <Text style={styles.sectionTitle}>Trading Specifications</Text>
+                    <MetaRow label="Contract Size" value={spec.contractSize} />
+                    <MetaRow label="Min Lot" value={spec.minVolume} />
+                    <MetaRow label="Max Lot" value={spec.maxVolume} />
+                    <MetaRow label="Lot Step" value={spec.volumeStep} />
+                    <MetaRow label="Pip Size" value={spec.pipSize} />
+                    <MetaRow label="Digits" value={spec.digits} />
+                    <MetaRow label="Base Currency" value={spec.baseCurrency} />
+                    <MetaRow label="Profit Currency" value={spec.profitCurrency} />
                 </View>
             </ScrollView>
 
@@ -153,7 +137,7 @@ export default function InstrumentDetail() {
                         });
                     }}
                 >
-                    <Text style={styles.actionButtonText}>Sell</Text>
+                    <Text style={styles.actionButtonText}>Sell | Short</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -168,7 +152,7 @@ export default function InstrumentDetail() {
                         });
                     }}
                 >
-                    <Text style={styles.actionButtonText}>Buy</Text>
+                    <Text style={styles.actionButtonText}>Buy | Long</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -178,7 +162,7 @@ export default function InstrumentDetail() {
 const MetaRow = ({ label, value }) => (
     <View style={styles.metaRow}>
         <Text style={styles.metaLabel}>{label}</Text>
-        <Text style={styles.metaValue}>{value}</Text>
+        <Text style={styles.metaValue}>{value ?? '—'}</Text>
     </View>
 );
 
@@ -285,7 +269,7 @@ const styles = StyleSheet.create({
 
     // Chart Placeholder
     chartCard: {
-        marginVertical: 8,
+        marginVertical: 16,
     },
     chartTitle: {
         color: '#FFFFFF',
@@ -340,7 +324,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#EF4444',
     },
     actionButtonText: {
-        color: '#000000',
+        color: '#fff',
         fontSize: 18,
         fontWeight: '700',
     },
@@ -371,5 +355,50 @@ const styles = StyleSheet.create({
         color: '#000',
         fontSize: 16,
         fontWeight: '700',
+    },
+    symbol: {
+        color: '#9CA3AF',
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+
+    priceLabel: {
+        color: '#6B7280',
+        fontSize: 13,
+        marginBottom: 16,
+    },
+
+    priceRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+
+    priceBox: {
+        backgroundColor: '#1A1F2E',
+        padding: 12,
+        borderRadius: 12,
+        flex: 1,
+        marginHorizontal: 4,
+        alignItems: 'center',
+    },
+
+    boxLabel: {
+        color: '#6B7280',
+        fontSize: 12,
+    },
+
+    boxValue: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
+        marginTop: 4,
+    },
+
+    sectionTitle: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
+        marginBottom: 12,
     },
 });
