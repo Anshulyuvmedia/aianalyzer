@@ -6,7 +6,7 @@ import IndexCard from '@/components/IndexCard';
 import { useState, useContext, useMemo } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { CopyStrategyContext } from '@/context/CopyStrategyContext';
-import { formatCurrency, formatPercent, formatCompactNumber } from '@/utils/numberFormatter';
+import { formatCurrency } from '@/utils/numberFormatter';
 
 const CopyStrategy = () => {
     const { dashboardMetrics } = useContext(CopyStrategyContext);

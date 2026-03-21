@@ -60,9 +60,7 @@ export const CopyStrategyProvider = ({ children }) => {
         try {
             // Mark as loading (optional – you can also use a separate loading map)
             setBacktests((prev) => ({ ...prev, [strategyId]: null })); // null = loading
-
             const res = await api.get(`/api/appdata/strategies/${strategyId}/backtest`);
-
             const backtestData = res.data?.data || res.data || null;
 
             setBacktests((prev) => ({

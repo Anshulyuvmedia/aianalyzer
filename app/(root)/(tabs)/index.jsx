@@ -70,8 +70,8 @@ const Index = () => {
     switch (item) {
       case 'index':
         return <IndexCard data={{ dashboardMetrics: dynamicDashboardMetrics }} />;
-      case 'sentiment':
-        return <MarketSentiments data={marketSentiment} />;
+      // case 'sentiment':
+      //   return <MarketSentiments data={marketSentiment} />;
       case 'trades':
         return <RecentTrades data={recentTrades} />;
       default:

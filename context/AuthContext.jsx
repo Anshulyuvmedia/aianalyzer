@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
                     Alert.alert("Phone Number is required", msg);
                 }
                 else if (status === 404) {
-                    Alert.alert("Already exits.!", msg);
+                    Alert.alert("User Not Found!", msg);
                 }
                 else if (status === 500) {
                     Alert.alert("Server Error", "Something went wrong on server.");

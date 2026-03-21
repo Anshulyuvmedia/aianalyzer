@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
 
 
 const IndexCard = ({ data, page }) => {
-
+    // console.log('data', data);
     return (
         <View style={styles.container}>
             <View style={styles.cardGrid}>

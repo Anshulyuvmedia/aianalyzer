@@ -38,9 +38,9 @@ const MarketSentiments = ({ data = [] }) => {
                 const formattedPrice = priceNum < 0.000001
                     ? priceNum.toExponential(4)
                     : priceNum.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 8,
-                      });
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 8,
+                    });
 
                 formatted[cleanKey] = {
                     aiConfidence: item.ai_confidence ?? 0,
