@@ -1,342 +1,484 @@
-import { Feather, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+// components/SupportedBrokers.jsx
+import React, { useContext, useRef } from 'react';
 import {
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
-    ActivityIndicator,
-    Alert,
+    ActivityIndicator
 } from 'react-native';
+import { Feather, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
 import LinearGradient from 'react-native-linear-gradient';
-import { useContext } from 'react';
+import { router } from 'expo-router';
 import { BrokerContext } from '@/context/BrokerContext';
+import RBSheet from 'react-native-raw-bottom-sheet';
 
 const SupportedBrokers = () => {
-    const { isConnected, accountInfo, brokerConnection, disconnectBroker, loading, error, refreshStatus } = useContext(BrokerContext);
+    const {
+        isConnected,
+        accountInfo,
+        brokerConnection,
+        disconnectBroker,
+        loading,
+        error,
+        refreshStatus
+    } = useContext(BrokerContext);
 
-    const broker = {
-        icon: 'server',
-        name: 'MetaTrader 5',
-        description: 'Forex, CFDs, Stocks, Futures',
-        commission: 'Depends on your broker',
-        connection_status: isConnected,
-        metaApiAccountId: brokerConnection?.metaApiAccountId,
-        // brokerName: brokerConnection?.name || 'My MT5 Account',
-    };
-    // console.log("accountInfo", accountInfo);
+    const disconnectSheetRef = useRef(null);
+
     const handleConnect = () => {
         router.push({ pathname: '/brokerapiconnect', params: { apiType: 'MT5' } });
     };
 
-    const handleDisconnect = () => {
-        Alert.alert('Disconnect', 'Are you sure you want to unlink your MT5 account?', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Disconnect',
-                style: 'destructive',
-                onPress: async () => {
-                    await disconnectBroker();
-                },
-            },
-        ]);
+    const handleDisconnectPress = () => {
+        disconnectSheetRef.current?.open();
     };
 
-    const handleRetryStatus = () => {
-        refreshStatus?.(); // safe call – it's optional in context
+    const confirmDisconnect = async () => {
+        disconnectSheetRef.current?.close();
+        await disconnectBroker();
     };
+
+    const handleRetry = () => {
+        refreshStatus?.();
+    };
+
+    const isConnectedStatus = isConnected && !loading;
 
     return (
-        <LinearGradient
-            colors={['#AEAED4', '#000', '#AEAED4']}
-            start={{ x: 1, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.gradientBoxBorder}
-        >
+        <>
             <LinearGradient
-                colors={['#1e2836', '#111827', '#1e2836']}
-                start={{ x: 0.4, y: 0 }}
+                colors={['#1e2937', '#0f172a']}
+                style={styles.card}
+                start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.innerGradient}
             >
-                <View style={styles.container}>
-                    <View style={styles.content}>
-                        <View className="flex-row items-center mb-5">
-                            <MaterialCommunityIcons
-                                name="transit-connection-variant"
-                                size={24}
-                                color="#60a5fa"
-                            />
-                            <Text style={styles.header}>Broker Connection</Text>
+                {/* Header */}
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <MaterialCommunityIcons
+                            name="transit-connection-variant"
+                            size={28}
+                            color="#22c55e"
+                        />
+                        <Text style={styles.title}>Broker Connection</Text>
+                    </View>
+
+                    {isConnectedStatus && (
+                        <View style={styles.connectedBadge}>
+                            <Octicons name="dot-fill" size={10} color="#22c55e" />
+                            <Text style={styles.connectedBadgeText}>Connected</Text>
                         </View>
+                    )}
+                </View>
 
-                        <View
-                            style={[
-                                styles.brokerCard,
-                                {
-                                    borderColor: broker.connection_status ? '#22c55e' : '#2563eb',
-                                },
-                            ]}
-                        >
-                            <View style={styles.brokerItem}>
-                                <Feather
-                                    name={broker.icon}
-                                    size={32}
-                                    color={broker.connection_status ? '#22c55e' : '#60a5fa'}
-                                    style={styles.brokerIcon}
-                                />
+                <View style={styles.brokerCard}>
+                    {/* Broker Header */}
+                    <View style={styles.brokerHeader}>
+                        <View style={styles.brokerInfo}>
+                            <Text style={styles.brokerName}>MetaTrader 5</Text>
+                            <Text style={styles.brokerDescription}>
+                                Forex • CFDs • Stocks • Futures
+                            </Text>
 
-                                <View style={styles.brokerInfo}>
-                                    <Text style={styles.brokerName}>{broker.name}</Text>
-                                    <Text style={styles.brokerDescription}>{broker.description}</Text>
-
-                                    {broker.connection_status && broker.brokerName && (
-                                        <Text style={{ color: '#94a3b8', fontSize: 13, marginTop: 2 }}>
-                                            {broker.brokerName}
-                                        </Text>
-                                    )}
-
-                                    {/* Polling / connection status feedback */}
-                                    {loading && (
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
-                                            <ActivityIndicator size="small" color="#60a5fa" />
-                                            <Text style={{ color: '#94a3b8', fontSize: 12, marginLeft: 8 }}>
-                                                Checking connection...
-                                            </Text>
-                                        </View>
-                                    )}
-
-                                    {error && !loading && (
-                                        <View style={{ marginTop: 6 }}>
-                                            <Text style={{ color: '#ef4444', fontSize: 12 }}>
-                                                Status check failed •{' '}
-                                                <Text
-                                                    onPress={handleRetryStatus}
-                                                    style={{ color: '#60a5fa', textDecorationLine: 'underline' }}
-                                                >
-                                                    Retry
-                                                </Text>
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-
-                                {loading ? (
-                                    <ActivityIndicator size="small" color="#60a5fa" />
-                                ) : broker.connection_status ? (
-                                    <View style={{ alignItems: 'flex-end' }}>
-                                        <TouchableOpacity
-                                            style={[styles.connectButton, { backgroundColor: '#22c55e' }]}
-                                            onPress={handleDisconnect}
-                                        >
-                                            <Text style={styles.connectedStatus}>Connected</Text>
-                                        </TouchableOpacity>
-                                        {broker.metaApiAccountId && (
-                                            <Text style={{ color: '#4ade80', fontSize: 12, marginTop: 4 }}>
-                                                MT5 linked
-                                            </Text>
-                                        )}
-                                    </View>
-                                ) : (
-                                    <TouchableOpacity style={styles.connectButton} onPress={handleConnect}>
-                                        <Text style={styles.connectText}>Connect MT5</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-
-                            {broker.connection_status && accountInfo && (
-                                <View style={styles.accountSection}>
-
-
-                                    {/* Account Identity */}
-                                    <View style={styles.accountHeader}>
-                                        <Text style={styles.accountName}>{accountInfo.accountName}</Text>
-                                        <Text style={styles.accountSub}>
-                                            {accountInfo.broker} • {accountInfo.server}
-                                        </Text>
-                                        <Text style={styles.accountSub}>
-                                            Login: {accountInfo.login} • Leverage 1:{accountInfo.leverage}
-                                        </Text>
-                                    </View>
-
-                                    {/* Financial Metrics */}
-                                    <View style={styles.accountGrid}>
-
-                                        <View style={styles.metricBox}>
-                                            <Text style={styles.metricLabel}>Balance</Text>
-                                            <Text style={styles.metricValue}>
-                                                $ {accountInfo.balance}
-                                            </Text>
-                                        </View>
-
-                                        <View style={styles.metricBox}>
-                                            <Text style={styles.metricLabel}>Equity</Text>
-                                            <Text style={styles.metricValue}>
-                                                {accountInfo.equity}
-                                            </Text>
-                                        </View>
-
-                                        <View style={styles.metricBox}>
-                                            <Text style={styles.metricLabel}>Margin</Text>
-                                            <Text style={styles.metricValue}>
-                                                {accountInfo.margin}
-                                            </Text>
-                                        </View>
-
-                                        <View style={styles.metricBox}>
-                                            <Text style={styles.metricLabel}>Free Margin</Text>
-                                            <Text style={styles.metricValue}>
-                                                {accountInfo.freeMargin}
-                                            </Text>
-                                        </View>
-
-                                        <View style={styles.metricBox}>
-                                            <Text style={styles.metricLabel}>Credit</Text>
-                                            <Text style={styles.metricValue}>
-                                                {accountInfo.credit}
-                                            </Text>
-                                        </View>
-
-                                        <View style={styles.metricBox}>
-                                            <Text style={styles.metricLabel}>Trading</Text>
-                                            <Text style={[
-                                                styles.metricValue,
-                                                { color: accountInfo.tradeAllowed ? "#4ade80" : "#ef4444" }
-                                            ]}>
-                                                {accountInfo.tradeAllowed ? "Enabled" : "Disabled"}
-                                            </Text>
-                                        </View>
-
-                                    </View>
-
-
-                                    <View style={styles.statusRow}>
-                                        <Octicons name="dot-fill" size={14} color="#4ade80" />
-                                        <Text style={styles.statusText}>
-                                            Ready for signals & auto-trading
-                                        </Text>
-                                    </View>
-                                </View>
+                            {brokerConnection?.metaApiAccountId && (
+                                <Text style={styles.accountId}>
+                                    Account ID: {brokerConnection.metaApiAccountId}
+                                </Text>
                             )}
                         </View>
+
+                        {/* Action Button */}
+                        {loading ? (
+                            <ActivityIndicator size="small" color="#60a5fa" />
+                        ) : isConnectedStatus ? (
+                            <TouchableOpacity
+                                style={styles.disconnectButton}
+                                onPress={handleDisconnectPress}
+                            >
+                                <Text style={styles.disconnectText}>Disconnect</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity
+                                style={styles.connectButton}
+                                onPress={handleConnect}
+                            >
+                                <Text style={styles.connectText}>Connect MT5</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
+
+                    {/* Connection Status Messages */}
+                    {loading && (
+                        <View style={styles.statusMessage}>
+                            <ActivityIndicator size="small" color="#60a5fa" />
+                            <Text style={styles.loadingText}>Checking broker connection...</Text>
+                        </View>
+                    )}
+
+                    {error && !loading && (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorText}>
+                                Failed to check connection status
+                            </Text>
+                            <TouchableOpacity onPress={handleRetry}>
+                                <Text style={styles.retryText}>Retry</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {/* Account Details - Only show when connected */}
+                    {isConnectedStatus && accountInfo && (
+                        <View style={styles.accountSection}>
+                            <View style={styles.accountHeader}>
+                                <Text style={styles.accountTitle}>
+                                    {accountInfo.accountName || 'Trading Account'}
+                                </Text>
+                                <Text style={styles.accountSubtitle}>
+                                    {accountInfo.broker} • {accountInfo.server}
+                                </Text>
+                                <Text style={styles.accountSubtitle}>
+                                    Login: {accountInfo.login} • Leverage: 1:{accountInfo.leverage || '—'}
+                                </Text>
+                            </View>
+
+                            {/* Financial Metrics Grid */}
+                            <View style={styles.metricsGrid}>
+                                {[
+                                    { label: 'Balance', value: `$${Number(accountInfo.balance || 0).toLocaleString()}` },
+                                    { label: 'Equity', value: `$${Number(accountInfo.equity || 0).toLocaleString()}` },
+                                    { label: 'Margin', value: `$${Number(accountInfo.margin || 0).toLocaleString()}` },
+                                    { label: 'Free Margin', value: `$${Number(accountInfo.freeMargin || 0).toLocaleString()}` },
+                                    { label: 'Credit', value: `$${Number(accountInfo.credit || 0).toLocaleString()}` },
+                                    {
+                                        label: 'Trading',
+                                        value: accountInfo.tradeAllowed ? 'Enabled' : 'Disabled',
+                                        color: accountInfo.tradeAllowed ? '#22c55e' : '#ef4444'
+                                    },
+                                ].map((item, index) => (
+                                    <View key={index} style={styles.metricBox}>
+                                        <Text style={styles.metricLabel}>{item.label}</Text>
+                                        <Text style={[
+                                            styles.metricValue,
+                                            item.color && { color: item.color }
+                                        ]}>
+                                            {item.value}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </View>
+
+                            {/* Ready Status */}
+                            <View style={styles.readyStatus}>
+                                <Octicons name="dot-fill" size={14} color="#22c55e" />
+                                <Text style={styles.readyText}>
+                                    Ready for signals & automated trading
+                                </Text>
+                            </View>
+                        </View>
+                    )}
                 </View>
             </LinearGradient>
-        </LinearGradient>
+
+            {/* Disconnect Confirmation Bottom Sheet */}
+            <RBSheet
+                ref={disconnectSheetRef}
+                height={380}
+                openDuration={280}
+                closeOnDragDown={true}
+                closeOnPressMask={true}
+                customStyles={{
+                    container: styles.bottomSheetContainer,
+                    draggableIcon: { backgroundColor: '#475569' },
+                }}
+            >
+                <View style={styles.sheetContent}>
+                    <View style={styles.warningIconContainer}>
+                        <Feather name="alert-triangle" size={52} color="#f59e0b" />
+                    </View>
+
+                    <Text style={styles.sheetTitle}>Disconnect MT5 Account?</Text>
+
+                    <Text style={styles.sheetDescription}>
+                        This will unlink your MetaTrader 5 account and stop all automated trading signals.
+                    </Text>
+
+                    <Text style={styles.warningText}>
+                        You can reconnect anytime later.
+                    </Text>
+
+                    <View style={styles.sheetActions}>
+                        <TouchableOpacity
+                            style={styles.cancelButton}
+                            onPress={() => disconnectSheetRef.current?.close()}
+                        >
+                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.confirmDisconnectButton}
+                            onPress={confirmDisconnect}
+                        >
+                            <Text style={styles.confirmDisconnectText}>Yes, Disconnect</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </RBSheet>
+        </>
     );
 };
 
 export default SupportedBrokers;
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    content: { padding: 4 },
-    gradientBoxBorder: { borderRadius: 16, padding: 1.5 },
-    innerGradient: { borderRadius: 14.5, padding: 16 },
+    card: {
+        borderRadius: 20,
+        padding: 18,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#334155',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+    },
     header: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '700',
-        marginLeft: 8,
-    },
-    brokerCard: {
-        backgroundColor: '#1e293b',
-        borderRadius: 12,
-        borderWidth: 1.5,
-        padding: 16,
-    },
-    brokerItem: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 18,
     },
-    brokerIcon: { marginRight: 16 },
-    brokerInfo: { flex: 1 },
-    brokerName: {
-        color: '#fff',
-        fontSize: 17,
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    title: {
+        color: '#f8fafc',
+        fontSize: 20,
+        fontWeight: '700',
+        letterSpacing: -0.3,
+    },
+    connectedBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(34, 197, 94, 0.15)',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#22c55e33',
+    },
+    connectedBadgeText: {
+        color: '#22c55e',
+        fontSize: 13,
         fontWeight: '600',
-        marginBottom: 4,
+        marginLeft: 5,
+    },
+    brokerCard: {
+        backgroundColor: '#1e2937',
+        borderRadius: 16,
+        padding: 18,
+        borderWidth: 1,
+        borderColor: '#334155',
+    },
+    brokerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    brokerInfo: {
+        flex: 1,
+    },
+    brokerName: {
+        color: '#f8fafc',
+        fontSize: 18,
+        fontWeight: '700',
     },
     brokerDescription: {
         color: '#94a3b8',
-        fontSize: 13,
-        marginBottom: 6,
+        fontSize: 14,
+        marginTop: 2,
+    },
+    accountId: {
+        color: '#64748b',
+        fontSize: 12.5,
+        marginTop: 4,
     },
     connectButton: {
         backgroundColor: '#2563eb',
-        borderRadius: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 12,
     },
     connectText: {
         color: '#fff',
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '600',
     },
-    connectedStatus: {
+    disconnectButton: {
+        backgroundColor: '#ef4444',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+    },
+    disconnectText: {
         color: '#fff',
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '600',
+    },
+    statusMessage: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 16,
+        padding: 12,
+        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+        borderRadius: 12,
+    },
+    loadingText: {
+        color: '#94a3b8',
+        fontSize: 13.5,
+        marginLeft: 10,
+    },
+    errorContainer: {
+        marginTop: 12,
+        padding: 12,
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        borderRadius: 12,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    errorText: {
+        color: '#f87171',
+        fontSize: 13.5,
+    },
+    retryText: {
+        color: '#60a5fa',
+        fontSize: 13.5,
+        fontWeight: '600',
+    },
+    accountSection: {
+        marginTop: 20,
+        paddingTop: 18,
+        borderTopWidth: 1,
+        borderTopColor: '#334155',
     },
     accountHeader: {
-        marginBottom: 14,
+        marginBottom: 16,
     },
-
-    accountName: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "700",
+    accountTitle: {
+        color: '#f8fafc',
+        fontSize: 17,
+        fontWeight: '700',
     },
-
-    accountSub: {
-        color: "#94a3b8",
-        fontSize: 12,
-        marginTop: 2,
-    },
-
-    accountSection: {
-        borderTopWidth: 1,
-        borderTopColor: "#22c55e33",
-        marginTop: 14,
-        paddingTop: 14,
-    },
-
-    statusRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 12,
-    },
-
-    statusText: {
-        color: "#4ade80",
-        marginLeft: 6,
+    accountSubtitle: {
+        color: '#94a3b8',
         fontSize: 13,
+        marginTop: 3,
     },
-
-    accountGrid: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
+    metricsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
     },
-
     metricBox: {
-        width: "48%",
-        backgroundColor: "#0f172a",
-        borderRadius: 10,
-        padding: 12,
-        marginBottom: 10,
+        flex: 1,
+        minWidth: '48%',
+        backgroundColor: '#0f172a',
+        borderRadius: 12,
+        padding: 14,
         borderWidth: 1,
-        borderColor: "#334155",
+        borderColor: '#334155',
     },
-
     metricLabel: {
-        color: "#94a3b8",
-        fontSize: 12,
+        color: '#94a3b8',
+        fontSize: 12.5,
+        marginBottom: 4,
+    },
+    metricValue: {
+        color: '#f1f5f9',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    readyStatus: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 16,
+        padding: 12,
+        backgroundColor: 'rgba(34, 197, 94, 0.08)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#22c55e22',
+    },
+    readyText: {
+        color: '#4ade80',
+        fontSize: 13.5,
+        marginLeft: 8,
+        fontWeight: '500',
     },
 
-    metricValue: {
-        color: "#fff",
-        fontSize: 15,
-        fontWeight: "600",
+    /* Bottom Sheet Styles */
+    bottomSheetContainer: {
+        backgroundColor: '#0f172a',
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+    },
+    sheetContent: {
+        padding: 28,
+        alignItems: 'center',
+    },
+    warningIconContainer: {
+        marginBottom: 20,
+    },
+    sheetTitle: {
+        color: '#fff',
+        fontSize: 22,
+        fontWeight: '700',
+        textAlign: 'center',
+        marginBottom: 12,
+    },
+    sheetDescription: {
+        color: '#cbd5e1',
+        fontSize: 16,
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 8,
+    },
+    warningText: {
+        color: '#94a3b8',
+        fontSize: 14,
+        textAlign: 'center',
+        marginBottom: 32,
+    },
+    sheetActions: {
+        flexDirection: 'row',
+        gap: 14,
+        width: '100%',
+    },
+    cancelButton: {
+        flex: 1,
+        backgroundColor: '#1e2937',
+        paddingVertical: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        color: '#94a3b8',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    confirmDisconnectButton: {
+        flex: 1,
+        backgroundColor: '#ef4444',
+        paddingVertical: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+    },
+    confirmDisconnectText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700',
     },
 });

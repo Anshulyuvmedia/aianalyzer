@@ -11,7 +11,6 @@ export const CopyStrategyProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [dashboardMetrics, setDashboardMetrics] = useState(null);
-    const [strategyStatus, setStrategyStatus] = useState(null);
 
     const fetchStrategies = useCallback(async () => {
         try {
@@ -106,7 +105,7 @@ export const CopyStrategyProvider = ({ children }) => {
 
             // Fix 1: correct endpoint path (adjust if your baseURL includes /api)
             const res = await api.post(`/api/appdata/strategies/${strategyId}/follow`, { action });
-            // console.log('Follow API response:', res.data);
+            // console.log("✅ Activation Response:", res.data);
 
             // Fix 2: Safely extract values (both response shapes have these fields)
             const { followerCount, isFollowing } = res.data;
@@ -169,24 +168,13 @@ export const CopyStrategyProvider = ({ children }) => {
         }
     }, []);
 
-    const updateStategyStatus = useCallback(async (strategyId, newStatus) => {
-        try {
-            await api.post(`/api/appdata/strategies/${strategyId}/status`, {
-                status: newStatus
-            });
-
-            setStrategies(prev =>
-                prev.map(s =>
-                    s._id === strategyId
-                        ? { ...s, status: newStatus }
-                        : s
-                )
-            );
-
-        } catch (err) {
-            console.error('Failed to update Strategy Status:', err.response?.data || err.message);
-        }
-    }, []);
+    const updateStrategyLocalStatus = (id, status) => {
+        setStrategies(prev =>
+            prev.map(s =>
+                s._id === id ? { ...s, status } : s
+            )
+        );
+    };
 
     useEffect(() => {
         fetchStrategies();
@@ -205,7 +193,7 @@ export const CopyStrategyProvider = ({ children }) => {
                 fetchStrategyBacktest,
                 dashboardMetrics,
                 fetchDashboardMetrics,
-                updateStategyStatus
+                updateStrategyLocalStatus,
             }}
         >
             {children}

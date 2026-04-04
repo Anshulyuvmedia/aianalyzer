@@ -4,14 +4,12 @@ import IndexCard from '@/components/IndexCard';
 import { useContext, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { AlgoTradingContext } from "@/context/AlgoTradingContext";
-import { formatCurrency, formatPercent, formatCompactNumber } from '@/utils/numberFormatter';
+import { formatCurrency } from '@/utils/numberFormatter';
 
 const AlgoTrading = () => {
     const { algotradingData } = useContext(AlgoTradingContext);
-
     const summary = algotradingData?.summary;
     const activeStrategies = algotradingData?.activeStrategies;
-
     const [data, setData] = useState({
         dashboardMetrics: []
     });

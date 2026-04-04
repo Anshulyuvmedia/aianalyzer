@@ -1,91 +1,109 @@
 // screens/InstrumentList.js
 import React, { useState, useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, Image, TouchableOpacity, TextInput, ScrollView, } from 'react-native';
+import {
+    StyleSheet,
+    Text,
+    View,
+    FlatList,
+    ActivityIndicator,
+    Image,
+    TouchableOpacity,
+    TextInput
+} from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import HomeHeader from '@/components/HomeHeader';
 import { useInstruments } from '@/context/InstrumentContext';
 import { useRouter } from 'expo-router';
 
-const TAB_TYPES = ['forex', 'crypto', 'commodities', 'stocks', 'indices', 'other'];
+const TAB_TYPES = [
+    { key: 'forex', label: 'Forex', icon: 'currency-usd' },
+    { key: 'crypto', label: 'Crypto', icon: 'bitcoin' },
+    { key: 'commodities', label: 'Commodities', icon: 'oil' },
+    { key: 'stocks', label: 'Stocks', icon: 'chart-line' },
+    { key: 'indices', label: 'Indices', icon: 'chart-bar' },
+    { key: 'other', label: 'Other', icon: 'dots-horizontal' }
+];
 
 const InstrumentList = () => {
-    const { instrumentsByType, loading, error, fetchInstruments, setSelectedInstrument, getLogoUrl } = useInstruments();
+    const {
+        instrumentsByType,
+        loading,
+        error,
+        fetchInstruments,
+        setSelectedInstrument,
+        getLogoUrl
+    } = useInstruments();
 
     const router = useRouter();
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedType, setSelectedType] = useState('forex'); // start with forex – most common
+    const [selectedType, setSelectedType] = useState('forex');
 
-    const scrollViewRef = useRef(null);
-
-    const handleTypeChange = useCallback(
-        (type) => {
-            setSelectedType(type);
-            if (!instrumentsByType[type]?.length && !loading[type]) {
-                fetchInstruments(type);
-            }
-        },
-        [fetchInstruments, instrumentsByType]
-    );
+    const handleTypeChange = useCallback((type) => {
+        setSelectedType(type);
+        if (!instrumentsByType[type]?.length && !loading[type]) {
+            fetchInstruments(type);
+        }
+    }, [fetchInstruments, instrumentsByType, loading]);
 
     const instruments = instrumentsByType[selectedType] || [];
 
-    const filtered = instruments.filter(item =>
+    const filteredInstruments = instruments.filter(item =>
         item.symbol?.toLowerCase().includes(searchQuery.trim().toLowerCase())
     );
 
     const renderItem = ({ item }) => {
-        // console.log('item', item);
         if (!item?.symbol) return null;
+
         const logoUrl = getLogoUrl(item.symbol);
-        // For most broker symbols: symbol is both identifier and display name
         const displayName = item.symbol;
 
-        // Simple meta – can be enhanced later if you add more data from symbol specification
-        let metaText = '—';
-
+        // Dynamic meta text
+        let metaText = 'Instrument';
         if (selectedType === 'forex') {
-            metaText = item.symbol.includes('JPY') ? 'Cross' : 'Major/Minor';
-        } else if (selectedType === 'crypto') {
-            metaText = 'Crypto';
-        } else if (selectedType === 'commodities') {
-            metaText = 'Commodity';
-        } else if (selectedType === 'indices') {
-            metaText = 'Index';
-        } else if (selectedType === 'stocks') {
-            metaText = 'Stock';
-        }
+            metaText = item.symbol.includes('JPY') ? 'Cross Pair' : 'Major/Minor Pair';
+        } else if (selectedType === 'crypto') metaText = 'Cryptocurrency';
+        else if (selectedType === 'commodities') metaText = 'Commodity';
+        else if (selectedType === 'indices') metaText = 'Market Index';
+        else if (selectedType === 'stocks') metaText = 'Equity';
 
         return (
             <TouchableOpacity
-                style={styles.itemCard}
-                activeOpacity={0.7}
+                style={styles.instrumentCard}
+                activeOpacity={0.92}
                 onPress={() => {
                     setSelectedInstrument(item);
                     router.push(`/Discovery/${encodeURIComponent(item.symbol)}`);
                 }}
             >
-                <Image
-                    source={{ uri: logoUrl }}
-                    style={styles.logo}
-                    resizeMode="contain"
-                    defaultSource={{ uri: logoUrl }}
-                    onError={(e) =>
-                        console.log(`Logo failed for ${item.symbol}: ${e.nativeEvent.error}`)
-                    }
-                />
+                <View style={styles.logoContainer}>
+                    <Image
+                        source={{ uri: logoUrl }}
+                        style={styles.logo}
+                        resizeMode="contain"
+                        onError={() => console.log(`Logo failed for ${item.symbol}`)}
+                    />
+                </View>
 
-                <View style={styles.itemContent}>
-                    <View style={styles.itemMain}>
+                <View style={styles.content}>
+                    <View style={styles.mainInfo}>
                         <Text style={styles.symbol}>{item.symbol}</Text>
-                        <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
+                        <Text style={styles.name} numberOfLines={1}>
                             {displayName}
                         </Text>
                     </View>
 
-                    <View style={styles.itemMeta}>
+                    <View style={styles.metaContainer}>
                         <Text style={styles.metaText}>{metaText}</Text>
                     </View>
                 </View>
+
+                <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color="#64748b"
+                    style={styles.chevron}
+                />
             </TouchableOpacity>
         );
     };
@@ -97,89 +115,104 @@ const InstrumentList = () => {
             <HomeHeader
                 page="discovery"
                 title="Instrument Discovery"
-                subtitle="Explore available trading symbols"
+                subtitle="Explore global trading symbols"
             />
 
-            <ScrollView
-                ref={scrollViewRef}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.segmentScrollContent}
-                style={styles.segmentScroll}
-            >
-                {TAB_TYPES.map((type) => (
-                    <TouchableOpacity
-                        key={type}
-                        style={[
-                            styles.segmentButton,
-                            selectedType === type && styles.segmentButtonActive,
-                        ]}
-                        onPress={() => handleTypeChange(type)}
-                    >
-                        <Text
+            {/* Category Tabs */}
+            <View style={styles.tabsContainer}>
+                <FlatList
+                    horizontal
+                    data={TAB_TYPES}
+                    keyExtractor={(item) => item.key}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tabsContent}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
                             style={[
-                                styles.segmentText,
-                                selectedType === type && styles.segmentTextActive,
+                                styles.tabButton,
+                                selectedType === item.key && styles.tabButtonActive,
                             ]}
+                            onPress={() => handleTypeChange(item.key)}
                         >
-                            {type.toUpperCase()}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
+                            <MaterialCommunityIcons
+                                name={item.icon}
+                                size={18}
+                                color={selectedType === item.key ? '#000' : '#94a3b8'}
+                                style={{ marginRight: 6 }}
+                            />
+                            <Text style={[
+                                styles.tabText,
+                                selectedType === item.key && styles.tabTextActive
+                            ]}>
+                                {item.label}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                />
+            </View>
 
-            <View style={{ flex: 1 }}>
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
                 <View style={styles.searchWrapper}>
+                    <Ionicons name="search" size={20} color="#64748b" style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search symbol..."
-                        placeholderTextColor="#777"
+                        placeholder="Search symbols..."
+                        placeholderTextColor="#64748b"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         autoCapitalize="none"
                         returnKeyType="search"
-                        clearButtonMode="while-editing"
                     />
                 </View>
+            </View>
 
+            {/* Content Area */}
+            <View style={styles.contentArea}>
                 {isLoading ? (
-                    <View style={styles.center}>
-                        <ActivityIndicator size="large" color="#00ff9d" />
-                        <Text style={styles.loadingText}>Loading {selectedType}...</Text>
+                    <View style={styles.centerContainer}>
+                        <ActivityIndicator size="large" color="#22c55e" />
+                        <Text style={styles.loadingText}>
+                            Loading {selectedType} instruments...
+                        </Text>
                     </View>
                 ) : error ? (
-                    <View style={styles.center}>
+                    <View style={styles.centerContainer}>
+                        <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
                         <Text style={styles.errorText}>{error}</Text>
                         <TouchableOpacity
                             style={styles.retryButton}
                             onPress={() => fetchInstruments(selectedType, { forceRefresh: true })}
-                            activeOpacity={0.8}
                         >
                             <Text style={styles.retryText}>Try Again</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
                     <FlatList
-                        style={{ flex: 1 }}
-                        data={filtered}
+                        data={filteredInstruments}
                         renderItem={renderItem}
                         keyExtractor={(item) => item.symbol}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.listContent}
                         ListEmptyComponent={
                             <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>
+                                <Ionicons name="search-outline" size={48} color="#475569" />
+                                <Text style={styles.emptyTitle}>
                                     {searchQuery.trim()
                                         ? `No results for "${searchQuery}"`
-                                        : `No ${selectedType} symbols available`}
+                                        : `No ${selectedType} instruments found`}
+                                </Text>
+                                <Text style={styles.emptySubtitle}>
+                                    {searchQuery.trim()
+                                        ? "Try a different keyword"
+                                        : "New instruments may be added soon"}
                                 </Text>
                             </View>
                         }
-                        ListFooterComponent={<View style={{ height: 80 }} />}
+                        ListFooterComponent={<View style={{ height: 100 }} />}
                         initialNumToRender={12}
-                        maxToRenderPerBatch={16}
+                        maxToRenderPerBatch={20}
                         windowSize={15}
-                        contentContainerStyle={styles.listContent}
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
                     />
                 )}
             </View>
@@ -187,171 +220,186 @@ const InstrumentList = () => {
     );
 };
 
+export default InstrumentList;
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
     },
-
-    segmentScroll: {
+    tabsContainer: {
         backgroundColor: '#000',
-        paddingVertical: 6,
-        maxHeight: 54,
-    },
-
-    segmentScrollContent: {
-        paddingHorizontal: 16,
         paddingVertical: 8,
-        gap: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#1e2937',
     },
-
-    segmentButton: {
-        borderRadius: 20,
-        height: 38,
-        backgroundColor: '#161A1F',
+    tabsContent: {
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        gap: 10,
+    },
+    tabButton: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 20,
+        backgroundColor: '#1e2937',
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#334155',
     },
-
-    segmentButtonActive: {
-        backgroundColor: '#22C55E',
+    tabButtonActive: {
+        backgroundColor: '#22c55e',
+        borderColor: '#22c55e',
     },
-
-    segmentText: {
-        color: '#8B949E',
+    tabText: {
+        color: '#94a3b8',
         fontSize: 14,
         fontWeight: '600',
-        letterSpacing: 0.3,
+        letterSpacing: 0.2,
     },
-
-    segmentTextActive: {
+    tabTextActive: {
         color: '#000',
         fontWeight: '700',
     },
-
-    searchWrapper: {
+    searchContainer: {
         paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingVertical: 12,
+        backgroundColor: '#000',
     },
-
-    searchInput: {
-        backgroundColor: '#161A1F',
-        color: '#FFFFFF',
-        paddingVertical: 14,
-        paddingHorizontal: 18,
+    searchWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1e2937',
         borderRadius: 16,
-        fontSize: 16,
+        paddingHorizontal: 16,
+        borderWidth: 1,
+        borderColor: '#334155',
     },
-
-    itemContent: {
+    searchIcon: {
+        marginRight: 12,
+    },
+    searchInput: {
+        flex: 1,
+        color: '#f1f5f9',
+        fontSize: 16,
+        paddingVertical: 14,
+    },
+    contentArea: {
+        flex: 1,
+    },
+    instrumentCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#000',
+        marginHorizontal: 16,
+        marginBottom: 12,
+        padding: 16,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: '#334155',
+    },
+    logoContainer: {
+        width: 56,
+        height: 56,
+        borderRadius: 16,
+        backgroundColor: '#0f172a',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
+        borderWidth: 1,
+        borderColor: '#334155',
+    },
+    logo: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+    },
+    content: {
         flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-
-    listContent: {
-        paddingHorizontal: 16,
-        paddingTop: 4,
-        paddingBottom: 80,
-    },
-
-    itemCard: {
-        backgroundColor: '#12161C',
-        borderRadius: 16,
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        marginBottom: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 5,
-    },
-
-    logo: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        marginRight: 16,
-        backgroundColor: '#1E252E',
-        borderWidth: 1,
-        borderColor: '#22C55E22',
-    },
-
-    itemMain: {
+    mainInfo: {
         flex: 1,
     },
-
     symbol: {
-        color: '#22C55E',
+        color: '#22c55e',
         fontSize: 18,
         fontWeight: '700',
+        letterSpacing: -0.3,
     },
-
     name: {
-        color: '#A1AEBB',
-        fontSize: 14,
-        marginTop: 2,
+        color: '#94a3b8',
+        fontSize: 14.5,
+        marginTop: 3,
     },
-
-    itemMeta: {
+    metaContainer: {
         alignItems: 'flex-end',
     },
-
     metaText: {
-        color: '#6B7280',
+        color: '#64748b',
         fontSize: 13,
+        fontWeight: '500',
+        backgroundColor: '#0f172a',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 10,
     },
-
-    center: {
+    chevron: {
+        marginLeft: 8,
+    },
+    centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 40,
     },
-
-    emptyContainer: {
-        alignItems: 'center',
-        paddingTop: 80,
-        paddingHorizontal: 30,
-    },
-
-    emptyText: {
-        color: '#6B7280',
-        fontSize: 16,
-        textAlign: 'center',
-        lineHeight: 24,
-    },
-
     loadingText: {
-        color: '#A1AEBB',
+        color: '#94a3b8',
         fontSize: 16,
-        marginTop: 20,
+        marginTop: 16,
     },
-
     errorText: {
-        color: '#EF4444',
+        color: '#ef4444',
         fontSize: 16,
         textAlign: 'center',
+        marginTop: 12,
         marginBottom: 24,
     },
-
     retryButton: {
-        backgroundColor: '#22C55E',
+        backgroundColor: '#22c55e',
         paddingVertical: 14,
-        paddingHorizontal: 40,
-        borderRadius: 12,
+        paddingHorizontal: 32,
+        borderRadius: 14,
     },
-
     retryText: {
         color: '#000',
         fontSize: 15,
         fontWeight: '700',
     },
+    emptyContainer: {
+        alignItems: 'center',
+        paddingTop: 100,
+        paddingHorizontal: 40,
+    },
+    emptyTitle: {
+        color: '#e2e8f0',
+        fontSize: 17,
+        fontWeight: '600',
+        marginTop: 16,
+        textAlign: 'center',
+    },
+    emptySubtitle: {
+        color: '#64748b',
+        fontSize: 14,
+        marginTop: 8,
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    listContent: {
+        paddingTop: 8,
+        paddingBottom: 100,
+    },
 });
-
-export default InstrumentList;

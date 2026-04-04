@@ -46,7 +46,7 @@ export default function PositionsScreen() {
                         styles.side,
                         item.side === "buy" ? styles.buy : styles.sell
                     ]}>
-                        {item.side.toUpperCase()} {item.volume}
+                        {item?.side || null} {item.volume}
                     </Text>
                 </View>
 

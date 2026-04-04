@@ -1,377 +1,404 @@
-import { Feather, FontAwesome, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+// (root)/components/AiTrading.jsx
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View, Animated, Dimensions } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 
-const AiTrading = ({ data, strategy }) => {
+const { width } = Dimensions.get('window');
 
-    const progress = data?.confidence / 100;
-    const radius = 40;
-    const strokeWidth = 10;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (progress * circumference);
+const AiTrading = ({ data = {}, strategy, lastTradeTime, pnl = 0, engineStatus }) => {
+
+    // ---------------- SAFE HELPERS ----------------
+    const safeNumber = (val, def = 0) => {
+        const num = Number(val);
+        return isNaN(num) ? def : num;
+    };
+
+    // ---------------- DATA ----------------
+    const confidence = safeNumber(data?.confidence, 0);
+    const progress = Math.min(Math.max(confidence / 100, 0), 1);
+
+    const winRate = safeNumber(data?.winRate, 0);
+    const roi = safeNumber(data?.roi, 0);
+    const tradesExecuted = safeNumber(data?.tradesExecuted, 0);
+
+    const status = data?.status || strategy?.status || "Paused";
+    const timeframe = data?.timeframe || strategy?.timeframes?.[0] || "—";
+    const market = data?.market || strategy?.symbols?.[0] || "—";
+    const sentiment = data?.sentiment || "NEUTRAL";
+
+    // ---------------- LIVE STATE ----------------
+    const [isLive, setIsLive] = useState(false);
+    const [lastTradeAgo, setLastTradeAgo] = useState("—");
+
+    const blinkAnim = useRef(new Animated.Value(1)).current;
+    const animationRef = useRef(null);
+
+    // ---------------- ANIMATIONS ----------------
+    const pnlAnim = useRef(new Animated.Value(0)).current;
+    const tradePulse = useRef(new Animated.Value(1)).current;
+    const confidenceAnim = useRef(new Animated.Value(0)).current;
+
+    // ---------------- TIMER & LIVE STATUS ----------------
+    useEffect(() => {
+        if (!lastTradeTime) {
+            setIsLive(false);
+            setLastTradeAgo("—");
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const diff = Date.now() - lastTradeTime;
+
+            const liveStatus = diff < 8000; // 8 seconds window for "live"
+            setIsLive(liveStatus);
+
+            if (diff < 1000) setLastTradeAgo("Just now");
+            else if (diff < 60000) setLastTradeAgo(`${Math.floor(diff / 1000)}s ago`);
+            else setLastTradeAgo(`${Math.floor(diff / 60000)}m ago`);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [lastTradeTime]);
+
+    // ---------------- LIVE BLINK ANIMATION ----------------
+    useEffect(() => {
+        if (isLive) {
+            animationRef.current = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(blinkAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+                    Animated.timing(blinkAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+                ])
+            );
+            animationRef.current.start();
+        } else {
+            blinkAnim.setValue(1);
+            animationRef.current?.stop();
+        }
+
+        return () => animationRef.current?.stop();
+    }, [isLive]);
+
+    // ---------------- PNL FLASH ----------------
+    useEffect(() => {
+        Animated.sequence([
+            Animated.timing(pnlAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
+            Animated.timing(pnlAnim, { toValue: 0, duration: 420, useNativeDriver: true }),
+        ]).start();
+    }, [pnl]);
+
+    // ---------------- TRADE PULSE ----------------
+    useEffect(() => {
+        if (!lastTradeTime) return;
+
+        Animated.sequence([
+            Animated.timing(tradePulse, { toValue: 1.04, duration: 180, useNativeDriver: true }),
+            Animated.timing(tradePulse, { toValue: 1, duration: 500, useNativeDriver: true }),
+        ]).start();
+    }, [lastTradeTime]);
+
+    // ---------------- CONFIDENCE ANIMATION ----------------
+    useEffect(() => {
+        Animated.timing(confidenceAnim, {
+            toValue: progress,
+            duration: 800,
+            useNativeDriver: true,
+        }).start();
+    }, [progress]);
+
+    // ---------------- COLORS ----------------
+    const pnlColor = pnl >= 0 ? "#22c55e" : "#ef4444";
+    const sentimentColor =
+        sentiment === "BULLISH" ? "#22c55e" :
+            sentiment === "BEARISH" ? "#ef4444" : "#94a3b8";
+
+    const strokeDashoffset = 188 - (progress * 188); // Circumference ≈ 188 (2 * π * 30)
 
     return (
-        <View style={styles.container}>
+        <Animated.View
+            style={{
+                transform: [{ scale: tradePulse }]
+            }}
+        >
             <LinearGradient
-                colors={['#AEAED4', '#000', '#AEAED4']}
-                start={{ x: 1, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={styles.gradientBoxBorder}
+                colors={['#1e2937', '#0f172a']}
+                style={styles.card}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
             >
-                <LinearGradient
-                    colors={['#1e2836', '#111827', '#1e2836']}
-                    start={{ x: 0.4, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.innerGradient}
-                >
-                    <View style={styles.cardContent}>
-
-                        {/* Header */}
-                        <View style={styles.cardHeader}>
-                            <View style={styles.headerLeft}>
-                                <MaterialCommunityIcons name="brain" size={24} color="#34C759" />
-                                <View style={styles.headerText}>
-                                    <Text style={styles.cardChange}>AI Trading</Text>
-                                    <Text style={styles.subText}>
-                                        Automated decision-making powered by AI models
-                                    </Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.headerRight}>
-                                <View style={styles.activeBadge}>
-                                    <Feather name="check-circle" size={18} color="#22c55e" />
-                                    <Text style={styles.activeText}>{data?.status}</Text>
-                                    <Octicons name="dot-fill" size={18} color="#22c55e" />
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Strategy Information */}
-                        <View style={styles.infoSection}>
-                            <View style={styles.headerLeft}>
-                                <MaterialCommunityIcons name="robot-excited-outline" size={24} color="#5897e5" />
-                                <Text style={styles.sectionTitle}>Strategy Information</Text>
-                            </View>
-
-                            <View style={styles.infoRow}>
-                                <Text style={styles.infoLabel}>Model Name:</Text>
-                                <Text style={styles.infoValue}>{data?.modelName}</Text>
-                            </View>
-
-                            <View style={styles.infoRow}>
-                                <Text style={styles.infoLabel}>Timeframe:</Text>
-                                <Text style={styles.infoValue}>{data?.timeframe}</Text>
-                            </View>
-
-                            <View style={styles.infoRow}>
-                                <Text style={styles.infoLabel}>Market:</Text>
-                                <Text style={styles.infoValue}>{data?.market}</Text>
-                            </View>
-                        </View>
-
-                        {/* Performance + Sentiment */}
-                        <View style={styles.performanceSection}>
-
-                            <View style={styles.performanceLeft}>
-                                <View style={styles.header}>
-                                    <FontAwesome name="line-chart" size={20} color="#22c55e" />
-                                    <Text style={styles.sectionTitle}>Performance Snapshot</Text>
-                                </View>
-
-                                <View style={[styles.performanceItem, styles.performanceGreenItem]}>
-                                    <Text style={[styles.performanceValue, styles.greenValue]}>
-                                        {data?.winRate}%
-                                    </Text>
-                                    <Text style={styles.performanceLabel}>Win Rate</Text>
-                                </View>
-
-                                <View style={[styles.performanceItem, styles.performanceBlueItem]}>
-                                    <Text style={[styles.performanceValue, styles.blueValue]}>
-                                        +{data?.roi}%
-                                    </Text>
-                                    <Text style={styles.performanceLabel}>ROI</Text>
-                                </View>
-
-                                <View style={[styles.performanceItem, styles.performancePurpleItem]}>
-                                    <Text style={[styles.performanceValue, styles.purpleValue]}>
-                                        {data?.tradesExecuted}
-                                    </Text>
-                                    <Text style={styles.performanceLabel}>Trades Executed</Text>
-                                </View>
-                            </View>
-
-                            {/* Sentiment */}
-                            <View style={styles.sentimentSection}>
-                                <View style={styles.progressContainer}>
-                                    <Text style={[styles.sectionTitle, styles.sentimentTitle]}>AI Sentiment</Text>
-
-                                    <Text style={styles.sentimentText}>
-                                        {data?.sentiment}
-                                    </Text>
-
-                                    <Svg height="120" width="120">
-                                        <Circle
-                                            cx="60"
-                                            cy="60"
-                                            r={radius}
-                                            stroke="#2d3748"
-                                            strokeWidth={strokeWidth}
-                                            fill="none"
-                                        />
-
-                                        <Circle
-                                            cx="60"
-                                            cy="60"
-                                            r={radius}
-                                            stroke="#22c55e"
-                                            strokeWidth={strokeWidth}
-                                            fill="none"
-                                            strokeDasharray={circumference}
-                                            strokeDashoffset={strokeDashoffset}
-                                            rotation="-90"
-                                            originX="60"
-                                            originY="60"
-                                        />
-
-                                        <SvgText
-                                            x="60"
-                                            y="60"
-                                            textAnchor="middle"
-                                            fontSize="18"
-                                            fontWeight="600"
-                                            fill="#22c55e"
-                                            dy=".3em"
-                                        >
-                                            {`${Math.round(progress * 100)}%`}
-                                        </SvgText>
-
-                                        <SvgText
-                                            x="60"
-                                            y="70"
-                                            textAnchor="middle"
-                                            fontSize="12"
-                                            fill="#9CA3AF"
-                                            dy=".3em"
-                                        >
-                                            Confidence
-                                        </SvgText>
-                                    </Svg>
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Buttons */}
-                        {/* <View style={styles.buttonContainer}>
-                            <TouchableOpacity style={styles.detailsButton}>
-                                <Octicons name="book" size={18} color="#FFFFFF" />
-                                <Text style={styles.buttonText}>View Strategy Details</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.activeBotButton}>
-                                <MaterialCommunityIcons name="rocket" size={18} color="#FFFFFF" />
-                                <Text style={styles.buttonText}>Active AI Bot</Text>
-                            </TouchableOpacity>
-                        </View> */}
-
+                {/* HEADER */}
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <Text style={styles.strategyName}>{strategy?.name || "AI Trading Engine"}</Text>
+                        <Text style={styles.marketInfo}>
+                            {market} • {timeframe}
+                        </Text>
                     </View>
-                </LinearGradient>
+
+                    {/* LIVE STATUS */}
+                    <View style={styles.liveContainer}>
+                        <Animated.View
+                            style={[
+                                styles.liveDot,
+                                {
+                                    opacity: isLive ? blinkAnim : 0.35,
+                                    transform: [{ scale: isLive ? blinkAnim : 1 }]
+                                }
+                            ]}
+                        />
+                        <Text style={[
+                            styles.liveText,
+                            { color: isLive ? "#22c55e" : "#64748b" }
+                        ]}>
+                            {isLive ? "● LIVE" : "IDLE"}
+                        </Text>
+                        <View style={styles.statusBadge}>
+                            <Text style={styles.statusText}>{status}</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* LAST TRADE */}
+                <Text style={styles.lastTrade}>
+                    Last trade • {lastTradeAgo}
+                </Text>
+
+                {/* METRICS ROW */}
+                <View style={styles.metricsRow}>
+                    <View style={styles.metric}>
+                        <Text style={styles.metricValue}>{winRate.toFixed(1)}%</Text>
+                        <Text style={styles.metricLabel}>Win Rate</Text>
+                    </View>
+
+                    <Animated.View
+                        style={[
+                            styles.metric,
+                            {
+                                transform: [{
+                                    scale: pnlAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: [1, 1.15],
+                                    })
+                                }]
+                            }
+                        ]}
+                    >
+                        <Text style={[styles.metricValue, { color: pnlColor }]}>
+                            {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}%
+                        </Text>
+                        <Text style={styles.metricLabel}>Today's PnL</Text>
+                    </Animated.View>
+
+                    <View style={styles.metric}>
+                        <Text style={styles.metricValue}>{tradesExecuted}</Text>
+                        <Text style={styles.metricLabel}>Trades</Text>
+                    </View>
+                </View>
+
+                {/* AI CONFIDENCE + SENTIMENT */}
+                <View style={styles.aiContainer}>
+                    <View style={styles.sentimentContainer}>
+                        <Text style={styles.sectionLabel}>Market Sentiment</Text>
+                        <Text style={[styles.sentimentText, { color: sentimentColor }]}>
+                            {sentiment}
+                        </Text>
+                    </View>
+
+                    {/* Confidence Circle */}
+                    <View style={styles.confidenceContainer}>
+                        <Svg height="92" width="92" viewBox="0 0 80 80">
+                            {/* Background Circle */}
+                            <Circle
+                                cx="40"
+                                cy="40"
+                                r="32"
+                                stroke="#1e2937"
+                                strokeWidth="7"
+                                fill="none"
+                            />
+                            {/* Progress Circle */}
+                            <AnimatedCircle
+                                cx="40"
+                                cy="40"
+                                r="32"
+                                stroke="#22c55e"
+                                strokeWidth="7"
+                                fill="none"
+                                strokeDasharray="201"
+                                strokeDashoffset={Animated.multiply(
+                                    Animated.subtract(1, confidenceAnim),
+                                    201
+                                )}
+                                strokeLinecap="round"
+                                rotation="-90"
+                                origin="40,40"
+                            />
+                            {/* Center Text */}
+                            <SvgText
+                                x="40"
+                                y="40"
+                                textAnchor="middle"
+                                dy=".35em"
+                                fill="#f1f5f9"
+                                fontSize="18"
+                                fontWeight="700"
+                            >
+                                {Math.round(confidence)}%
+                            </SvgText>
+                        </Svg>
+                        <Text style={styles.confidenceLabel}>Confidence</Text>
+                    </View>
+                </View>
+
+                {/* Optional: Engine Status Message */}
+                {engineStatus?.message && (
+                    <View style={styles.statusMessage}>
+                        <Text style={styles.statusMessageText}>
+                            {engineStatus.message}
+                        </Text>
+                    </View>
+                )}
             </LinearGradient>
-        </View>
+        </Animated.View>
     );
 };
 
+// Custom Animated Circle
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 export default AiTrading;
 
-
+// ---------------- MODERN STYLES ----------------
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        marginBottom: 10,
-    },
-    gradientBoxBorder: {
-        borderRadius: 15,
-        padding: 1,
-    },
-    innerGradient: {
-        borderRadius: 14,
-        padding: 15,
-    },
-    cardContent: {},
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        marginBottom: 15,
+    card: {
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#334155',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        marginBottom: 14,
     },
     headerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '75%',
+        flex: 1,
     },
-    headerText: {
-        marginLeft: 8,
-    },
-    headerRight: {
-        alignItems: 'flex-end',
-    },
-    activeBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#22c55e',
-        borderRadius: 20,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-    },
-    activeText: {
-        color: '#22c55e',
-        marginHorizontal: 5,
-        fontSize: 12,
-    },
-    cardChange: {
-        fontSize: 18,
-        fontWeight: '500',
-        color: '#FFFFFF',
-    },
-    subText: {
-        color: '#9CA3AF',
-        fontSize: 12,
-        marginBottom: 5,
-        width: '60%',
-    },
-    infoSection: {
-        marginBottom: 15,
-        padding: 10,
-        backgroundColor: '#1e2836',
-        borderRadius: 10,
-    },
-    sectionTitle: {
-        color: '#fff',
-        fontSize: 14,
-        marginBottom: 10,
-        marginStart: 10,
-    },
-    infoRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 5,
-    },
-    infoLabel: {
-        color: '#9CA3AF',
-        fontSize: 12,
-    },
-    infoValue: {
-        color: '#FFFFFF',
-        fontSize: 12,
-        fontWeight: '500',
-    },
-    performanceSection: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 15,
-    },
-    performanceLeft: {
-        width: '50%',
-    },
-    performanceItem: {
-        borderRadius: 10,
-        borderWidth: 1,
-        padding: 10,
-        marginBottom: 10,
-        alignItems: 'center',
-    },
-    performanceGreenItem: {
-        backgroundColor: '#14532d33',
-        borderColor: '#14532d',
-    },
-    performanceBlueItem: {
-        backgroundColor: '#1e40af1a',
-        borderColor: '#0033d7',
-    },
-    performancePurpleItem: {
-        backgroundColor: '#6b21a81a',
-        borderColor: '#6b21a8',
-    },
-    performanceValue: {
+    strategyName: {
+        color: "#f8fafc",
         fontSize: 20,
-        fontWeight: '600',
+        fontWeight: "700",
+        letterSpacing: -0.3,
     },
-    greenValue: {
-        color: '#4ade80',
+    marketInfo: {
+        color: "#94a3b8",
+        fontSize: 13.5,
+        marginTop: 2,
     },
-    blueValue: {
-        color: '#5c9eef',
+    liveContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
     },
-    purpleValue: {
-        color: '#c084fc',
+    liveDot: {
+        width: 9,
+        height: 9,
+        borderRadius: 5,
+        backgroundColor: "#22c55e",
     },
-    performanceLabel: {
-        color: '#9CA3AF',
-        fontSize: 12,
+    liveText: {
+        fontSize: 13,
+        fontWeight: "600",
+        letterSpacing: 0.5,
     },
-    sentimentSection: {
-        width: '40%',
-        alignItems: 'center',
+    statusBadge: {
+        backgroundColor: "#1e2937",
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "#334155",
     },
-    sentimentTitle: {
-        alignSelf: 'center',
+    statusText: {
+        color: "#cbd5e1",
+        fontSize: 11.5,
+        fontWeight: "600",
+    },
+    lastTrade: {
+        color: "#64748b",
+        fontSize: 12.5,
+        marginBottom: 18,
+    },
+    metricsRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 22,
+    },
+    metric: {
+        alignItems: "center",
+        flex: 1,
+    },
+    metricValue: {
+        fontSize: 22,
+        fontWeight: "700",
+        color: "#f1f5f9",
+    },
+    metricLabel: {
+        fontSize: 12.5,
+        color: "#64748b",
+        marginTop: 4,
+        fontWeight: "500",
+    },
+    aiContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        backgroundColor: "rgba(15, 23, 42, 0.6)",
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: "#334155",
+    },
+    sentimentContainer: {
+        flex: 1,
+    },
+    sectionLabel: {
+        fontSize: 13,
+        color: "#94a3b8",
+        marginBottom: 6,
     },
     sentimentText: {
-        color: '#22c55e',
-        fontSize: 20,
-        fontWeight: '700',
-        textAlign: 'center',
-        marginBottom: 10,
+        fontSize: 21,
+        fontWeight: "700",
+        letterSpacing: -0.4,
     },
-    progressContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginVertical: 'auto',
+    confidenceContainer: {
+        alignItems: "center",
     },
-    progressText: {
-        color: '#22c55e',
-        fontSize: 18,
-        fontWeight: '600',
-        textAlign: 'center',
+    confidenceLabel: {
+        marginTop: 8,
+        fontSize: 12.5,
+        color: "#94a3b8",
+        fontWeight: "500",
     },
-    progressLabel: {
-        color: '#9CA3AF',
-        fontSize: 12,
-        textAlign: 'center',
+    statusMessage: {
+        marginTop: 16,
+        padding: 12,
+        backgroundColor: "#1e2937",
+        borderRadius: 12,
+        borderLeftWidth: 3,
+        borderLeftColor: "#64748b",
     },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    detailsButton: {
-        flex: 1,
-        backgroundColor: '#2461ea',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 10,
-        padding: 10,
-        marginRight: 5,
-    },
-    activeBotButton: {
-        flex: 1,
-        backgroundColor: '#169e48',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 10,
-        padding: 10,
-    },
-    buttonText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        marginLeft: 5,
+    statusMessageText: {
+        color: "#cbd5e1",
+        fontSize: 13,
+        lineHeight: 18,
     },
 });

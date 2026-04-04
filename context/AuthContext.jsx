@@ -1,9 +1,10 @@
 // src/context/AuthContext.jsx
-import { createContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useState, useEffect, useCallback, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '@/lib/axios';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
+import { disconnectSocket } from "@/lib/socketService";
 
 export const AuthContext = createContext();
 
@@ -38,6 +39,11 @@ export const AuthProvider = ({ children }) => {
         bootstrapAuth();
     }, []);
 
+    useEffect(() => {
+        if (!user) {
+            disconnectSocket();
+        }
+    }, [user]);
     // Send OTP
     const requestOtp = useCallback(async (phoneNumber) => {
         if (!phoneNumber || !/^[6-9]\d{9}$/.test(phoneNumber)) {
@@ -127,6 +133,7 @@ export const AuthProvider = ({ children }) => {
             await AsyncStorage.multiRemove(['userData', 'userToken']);
             setUser(null);
             setIsAuthenticated(false);
+            disconnectSocket();
             router.replace('/(auth)/login');
         } catch (err) {
             console.error('Logout failed:', err);
@@ -151,3 +158,5 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
+
+export const useAuth = () => useContext(AuthContext);

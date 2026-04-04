@@ -17,7 +17,7 @@ const menuItems = [
     { name: 'Discovery', route: 'Discovery/InstrumentList', icon: 'rocket' },
     { name: 'Positions', route: 'Portfolio/PositionsScreen', icon: 'chart-bar' },
     { name: 'Orders', route: 'Portfolio/OrdersScreen', icon: 'history' },
-    // { name: 'Strategy Backtesting', route: 'strategybacktesting', icon: 'history' },
+    // { name: 'Saved Accounts', route: 'saved-accounts', icon: 'history' },
     // { name: 'AI Generated Trade', route: 'aigeneratedtrade', icon: 'robot' },
 ];
 
