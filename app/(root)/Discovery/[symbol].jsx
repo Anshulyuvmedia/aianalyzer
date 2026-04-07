@@ -129,7 +129,7 @@ export default function InstrumentDetail() {
                     style={[styles.actionButton, styles.sellButton]}
                     onPress={() => {
                         router.push({
-                            pathname: `/Discovery/placeOrder`,
+                            pathname: `/Discovery/PlaceOrderScreen`,
                             params: {
                                 symbol: symbol,
                                 transactionType: 'sell',  // pass as param
@@ -144,7 +144,7 @@ export default function InstrumentDetail() {
                     style={[styles.actionButton, styles.buyButton]}
                     onPress={() => {
                         router.push({
-                            pathname: `/Discovery/placeOrder`,
+                            pathname: `/Discovery/PlaceOrderScreen`,
                             params: {
                                 symbol: symbol,
                                 transactionType: 'buy',  // pass as param

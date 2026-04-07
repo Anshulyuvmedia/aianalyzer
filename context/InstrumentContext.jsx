@@ -211,7 +211,26 @@ export const InstrumentProvider = ({ children }) => {
     //-----------------------------------------------------------------------
     const placeOrder = useCallback(async (order) => {
         try {
-            const response = await api.post('/api/appdata/place-order', order);
+            const payload = {
+                symbol: order.symbol,
+                side: order.side,
+                orderType: order.orderType,
+                volume: order.volume,
+                price: order.price || null,
+                stopLoss: order.stopLoss || null,
+                takeProfit: order.takeProfit || null,
+                magic: order.magic || null,
+                comment: order.comment || null,
+            };
+
+            // Remove null/undefined values
+            Object.keys(payload).forEach(key => {
+                if (payload[key] === null || payload[key] === undefined) {
+                    delete payload[key];
+                }
+            });
+
+            const response = await api.post('/api/appdata/order/place-order', payload);
 
             if (response.data?.success) {
                 return response.data;
@@ -221,7 +240,10 @@ export const InstrumentProvider = ({ children }) => {
 
         } catch (err) {
             console.error("Order placement failed:", err);
-            throw err;
+
+            // Extract error message from response if available
+            const errorMessage = err.response?.data?.error || err.message || "Order placement failed";
+            throw new Error(errorMessage);
         }
     }, []);
 

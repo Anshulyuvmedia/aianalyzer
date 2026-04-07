@@ -185,11 +185,123 @@ export const BrokerProvider = ({ children }) => {
         try {
             const response = await api.get("/api/appdata/positions");
             if (response.data?.success) {
-                setPositions(response.data.data || []);
+                const positionsData = response.data.data || [];
+
+                // Enrich positions with real-time quotes and calculations
+                const enrichedPositions = await Promise.all(
+                    positionsData.map(async (pos) => {
+                        try {
+                            // Fetch current quote for the symbol
+                            const quoteResponse = await api.get(`/api/appdata/quote`, {
+                                params: { symbol: pos.symbol }
+                            });
+
+                            const isBuy = pos.type === 'POSITION_TYPE_BUY';
+                            const currentPrice = quoteResponse.data?.success
+                                ? (isBuy ? quoteResponse.data.data.ask : quoteResponse.data.data.bid)
+                                : pos.openPrice;
+
+                            // Get symbol specification for contract size
+                            let contractSize = 100000; // Default
+                            let pipSize = 0.0001;
+
+                            try {
+                                const specResponse = await api.get(`/api/appdata/instrument-spec`, {
+                                    params: { symbol: pos.symbol }
+                                });
+                                if (specResponse.data?.success) {
+                                    contractSize = specResponse.data.data.contractSize || 100000;
+                                    pipSize = specResponse.data.data.pipSize || 0.0001;
+                                }
+                            } catch (specErr) {
+                                console.warn(`Could not fetch spec for ${pos.symbol}:`, specErr.message);
+                            }
+
+                            // Calculate PnL
+                            let pnl = 0;
+                            if (isBuy) {
+                                pnl = (currentPrice - pos.openPrice) * contractSize * pos.volume;
+                            } else {
+                                pnl = (pos.openPrice - currentPrice) * contractSize * pos.volume;
+                            }
+
+                            // Add swap and commission if available
+                            const totalPnl = pnl + (pos.swap || 0) + (pos.commission || 0);
+
+                            return {
+                                ...pos,
+                                currentPrice: currentPrice,
+                                pnl: totalPnl,
+                                pnlRaw: pnl,
+                                contractSize: contractSize,
+                                pipSize: pipSize,
+                                isBuy: isBuy,
+                                updatedAt: new Date().toISOString()
+                            };
+
+                        } catch (err) {
+                            console.warn(`Failed to enrich position ${pos.symbol}:`, err.message);
+                            return {
+                                ...pos,
+                                currentPrice: pos.openPrice,
+                                pnl: 0,
+                                contractSize: 100000,
+                                pipSize: 0.0001,
+                                isBuy: pos.type === 'POSITION_TYPE_BUY'
+                            };
+                        }
+                    })
+                );
+
+                setPositions(enrichedPositions);
+                return enrichedPositions;
             }
         } catch (err) {
             console.warn("Failed to load positions:", err.message);
             setPositions([]);
+            throw err;
+        }
+    };
+
+    const closePosition = async (positionId, volume = null) => {
+        setLoading(true);
+        try {
+            const payload = { positionId };
+            if (volume) payload.volume = volume;
+
+            const response = await api.post("/api/appdata/close-position", payload);
+
+            if (response.data?.success) {
+                // Refresh positions after closing
+                await fetchPositions();
+                return response.data.data;
+            }
+            throw new Error(response.data?.error || "Failed to close position");
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || err.message;
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const closeMultiplePositions = async (positionIds) => {
+        setLoading(true);
+        try {
+            const response = await api.post("/api/appdata/close-all-positions", { positionIds });
+
+            if (response.data?.success) {
+                await fetchPositions();
+                return response.data.data;
+            }
+            throw new Error(response.data?.error || "Failed to close positions");
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || err.message;
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -202,6 +314,43 @@ export const BrokerProvider = ({ children }) => {
         } catch (err) {
             console.warn("Failed to load orders:", err.message);
             setOrders([]);
+        }
+    };
+
+    const getPositionDetails = async (positionId) => {
+        setLoading(true);
+        try {
+            const response = await api.get(`/api/appdata/position/${positionId}`);
+
+            if (response.data?.success) {
+                return response.data.data;
+            }
+            throw new Error(response.data?.error || "Failed to get position details");
+        } catch (err) {
+            console.warn('Failed to get position details:', err.message); r
+            const errorMsg = err.response?.data?.error || err.message;
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const modifyPosition = async (payload) => {
+        setLoading(true);
+        try {
+            const response = await api.post("/api/appdata/position/modify", payload);
+
+            if (response.data?.success) {
+                return response.data.data;
+            }
+            throw new Error(response.data?.error || "Failed to modify position");
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || err.message;
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -226,6 +375,11 @@ export const BrokerProvider = ({ children }) => {
         serverSuggestions,
         searchLoading,
         searchMT5Servers,
+
+        closePosition,
+        closeMultiplePositions,
+        getPositionDetails,
+        modifyPosition,
     };
 
     return <BrokerContext.Provider value={value}>{children}</BrokerContext.Provider>;
