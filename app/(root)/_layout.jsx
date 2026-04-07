@@ -18,7 +18,7 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="Discovery/PlaceOrderScreen" options={{ headerShown: false }} />
             <Stack.Screen name="Portfolio/PositionsScreen" options={{ headerShown: false }} />
             <Stack.Screen name="Portfolio/PositionDetailScreen" options={{ headerShown: false }} />
-            <Stack.Screen name="Portfolio/OrdersScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="Portfolio/TradesScreen" options={{ headerShown: false }} />
             <Stack.Screen name="saved-accounts" options={{ headerShown: false }} />
         </Stack>
     );

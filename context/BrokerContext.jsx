@@ -354,6 +354,45 @@ export const BrokerProvider = ({ children }) => {
         }
     };
 
+    const cancelOrder = async (orderId) => {
+        setLoading(true);
+        try {
+            const response = await api.post("/api/appdata/order/cancel", { orderId });
+
+            if (response.data?.success) {
+                return response.data.data;
+            }
+            throw new Error(response.data?.error || "Failed to cancel order");
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || err.message;
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getOrderHistory = async (startDate, endDate) => {
+        setLoading(true);
+        try {
+            let url = "/api/appdata/order-history";
+            if (startDate && endDate) {
+                url += `?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
+            }
+            const response = await api.get(url);
+
+            if (response.data?.success) {
+                return response.data.data;
+            }
+            return [];
+        } catch (err) {
+            console.warn('Failed to load order history:', err.message);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const value = {
         // Connection states
         isConnected,
@@ -380,6 +419,9 @@ export const BrokerProvider = ({ children }) => {
         closeMultiplePositions,
         getPositionDetails,
         modifyPosition,
+
+        cancelOrder,
+        getOrderHistory,
     };
 
     return <BrokerContext.Provider value={value}>{children}</BrokerContext.Provider>;
