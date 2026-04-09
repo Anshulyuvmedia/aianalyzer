@@ -16,7 +16,7 @@ export const TabBar = ({ tabs, activeTab, onTabChange }) => {
                 </TouchableOpacity>
             ))}
         </View>
-    );
+    );  
 };
 
 const styles = StyleSheet.create({

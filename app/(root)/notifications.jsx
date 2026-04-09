@@ -105,7 +105,7 @@ const Notifications = () => {
                                     {item.message}
                                 </Text>
                                 <Text style={[styles.status, getStatusStyle(item.status)]}>
-                                    {item.status.toUpperCase()}
+                                    {item?.status?.toUpperCase()}
                                 </Text>
                             </View>
                             <Text style={styles.timeText}>{formatDate(item.createdAt)}</Text>
@@ -202,7 +202,7 @@ const Notifications = () => {
                         <Text style={styles.rbSheetMessage}>{selectedNotification.message}</Text>
                         <Text style={styles.rbSheetTime}>{formatDate(selectedNotification.createdAt)}</Text>
                         <Text style={styles.rbSheetStatus}>
-                            Status: <Text style={getStatusStyle(selectedNotification.status).text}>{selectedNotification.status.toUpperCase()}</Text>
+                            Status: <Text style={getStatusStyle(selectedNotification.status).text}>{selectedNotification?.status?.toUpperCase()}</Text>
                         </Text>
                     </View>
                 )}

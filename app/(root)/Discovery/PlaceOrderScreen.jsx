@@ -16,7 +16,7 @@ import { LotSizeInput } from '@/components/placeOrder/LotSizeInput';
 import { LimitPriceInput } from '@/components/placeOrder/LimitPriceInput';
 import { TPSLControl } from '@/components/placeOrder/TPSLControl';
 import { OrderSummary } from '@/components/placeOrder/OrderSummary';
-import { OrderConfirmationSheet } from '@/components/placeOrder/OrderConfirmationSheet';
+import OrderConfirmationSheet from '@/components/placeOrder/OrderConfirmationSheet';
 
 export default function PlaceOrderScreen() {
     const { selectedInstrument, quoteData, symbolSpecs, placeOrder } = useInstruments();
@@ -323,7 +323,7 @@ export default function PlaceOrderScreen() {
 
             showDialogSuccess(
                 'Order Executed',
-                `${side.toUpperCase()} ${lotNum} ${symbol} successfully${enableTPSL ? ' with TP/SL' : ''}`,
+                `${side?.toUpperCase()} ${lotNum} ${symbol} successfully${enableTPSL ? ' with TP/SL' : ''}`,
                 async () => {
                     await fetchPositions();
                     setTimeout(() => router.back(), 400);

@@ -31,7 +31,7 @@ export const InstrumentProvider = ({ children }) => {
                 ? instrument
                 : instrument?.symbol || "?";
 
-        const firstLetter = String(symbol).trim().charAt(0).toUpperCase() || "?";
+        const firstLetter = String(symbol)?.trim().charAt(0).toUpperCase() || "?";
 
         const width = 56;
         const height = 56;

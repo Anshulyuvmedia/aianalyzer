@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     },
     buttonDisabled: { backgroundColor: '#1e40af' },
     loadingContainer: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+    buttonText: { color: '#ffffff', fontSize: 17, fontWeight: '700' },
 
     bottomSheet: {
         backgroundColor: '#0f172a',

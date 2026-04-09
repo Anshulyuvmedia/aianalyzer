@@ -65,7 +65,7 @@ const RecentTrades = ({ data }) => {
                                             trade.isBuy ? styles.buy : styles.sell,
                                         ]}
                                     >
-                                        {trade.direction.toUpperCase()} • {trade.timeAgo}
+                                        {trade?.direction?.toUpperCase()} • {trade.timeAgo}
                                     </Text>
                                 </View>
 

@@ -327,7 +327,7 @@ export const BrokerProvider = ({ children }) => {
             }
             throw new Error(response.data?.error || "Failed to get position details");
         } catch (err) {
-            console.warn('Failed to get position details:', err.message); r
+            console.warn('Failed to get position details:', err.message);
             const errorMsg = err.response?.data?.error || err.message;
             setError(errorMsg);
             throw new Error(errorMsg);
@@ -354,12 +354,80 @@ export const BrokerProvider = ({ children }) => {
         }
     };
 
+    const modifyOrder = async (orderId, modifications) => {
+        setLoading(true);
+        try {
+            // Validate modifications before sending
+            const validatedModifications = {};
+
+            if (modifications.volume !== undefined) {
+                const volume = parseFloat(modifications.volume);
+                if (isNaN(volume) || volume <= 0) {
+                    throw new Error('Invalid volume. Volume must be a positive number');
+                }
+                validatedModifications.volume = volume;
+            }
+
+            if (modifications.price !== undefined) {
+                const price = parseFloat(modifications.price);
+                if (isNaN(price) || price <= 0) {
+                    throw new Error('Invalid price. Price must be a positive number');
+                }
+                validatedModifications.price = price;
+            }
+
+            if (modifications.stopLoss !== undefined) {
+                if (modifications.stopLoss === null) {
+                    validatedModifications.stopLoss = null;
+                } else {
+                    const sl = parseFloat(modifications.stopLoss);
+                    if (isNaN(sl)) {
+                        throw new Error('Invalid stop loss value');
+                    }
+                    validatedModifications.stopLoss = sl;
+                }
+            }
+
+            if (modifications.takeProfit !== undefined) {
+                if (modifications.takeProfit === null) {
+                    validatedModifications.takeProfit = null;
+                } else {
+                    const tp = parseFloat(modifications.takeProfit);
+                    if (isNaN(tp)) {
+                        throw new Error('Invalid take profit value');
+                    }
+                    validatedModifications.takeProfit = tp;
+                }
+            }
+
+            const payload = {
+                orderId,
+                ...validatedModifications
+            };
+
+            const response = await api.post("/api/appdata/order/modify", payload);
+
+            if (response.data?.success) {
+                await fetchOrders(); // Refresh orders after modification
+                return response.data.data;
+            }
+            throw new Error(response.data?.error || "Failed to modify order");
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || err.message;
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const cancelOrder = async (orderId) => {
         setLoading(true);
         try {
             const response = await api.post("/api/appdata/order/cancel", { orderId });
 
             if (response.data?.success) {
+                await fetchOrders(); // Refresh orders after cancellation
                 return response.data.data;
             }
             throw new Error(response.data?.error || "Failed to cancel order");
@@ -422,6 +490,7 @@ export const BrokerProvider = ({ children }) => {
 
         cancelOrder,
         getOrderHistory,
+        modifyOrder,
     };
 
     return <BrokerContext.Provider value={value}>{children}</BrokerContext.Provider>;

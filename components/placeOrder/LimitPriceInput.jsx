@@ -3,7 +3,7 @@ import React from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { styles } from './styles';
 
-export const LimitPriceInput = ({ price, onPriceChange, digits }) => (
+export const LimitPriceInput = ({ price, onPriceChange, digits, label = "Limit Price" }) => (
     <View style={styles.section}>
         <Text style={styles.sectionLabel}>Limit Price</Text>
         <TextInput

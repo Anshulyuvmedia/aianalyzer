@@ -1,3 +1,4 @@
+// components/orders/EmptyState.jsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +18,8 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        paddingHorizontal: 40
+        paddingHorizontal: 40,
+        paddingVertical: 60
     },
     title: {
         color: "#fff",
