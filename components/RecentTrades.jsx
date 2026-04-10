@@ -20,18 +20,42 @@ const RecentTrades = ({ data }) => {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
-    // We'll show — for % and exit until you have closed positions
-    const mappedTrades = trades.map((trade) => ({
-        pair: trade.symbol || '—',
-        direction: trade.side?.toLowerCase() || '—',
-        timeAgo: getTimeAgo(trade.time),
-        // For real PnL % you need exit price / average entry + fees
-        // Until then: show fee % or — (most apps hide or show 0%)
-        percent: '—', // or calculate fee % if you want: ((trade.fee / trade.notional) * 100).toFixed(2)
-        entry: trade.price?.toFixed(2) || '—',
-        exit: '—', // change this when you have exit data
-        isBuy: trade.side?.toLowerCase() === 'buy',
-    }));
+    // Format price based on value (crypto needs more decimals)
+    const formatPrice = (price) => {
+        if (!price || price === '—') return '—';
+        const numPrice = parseFloat(price);
+        if (isNaN(numPrice)) return '—';
+        if (numPrice < 0.01) return numPrice.toFixed(6);
+        if (numPrice < 1) return numPrice.toFixed(4);
+        return numPrice.toFixed(2);
+    };
+
+    // Format P&L if available
+    const formatPnL = (profit) => {
+        if (!profit && profit !== 0) return null;
+        const isPositive = profit >= 0;
+        return {
+            text: `${isPositive ? '+' : ''}$${Math.abs(profit).toFixed(2)}`,
+            color: isPositive ? '#10b981' : '#ef4444'
+        };
+    };
+
+    const mappedTrades = trades.map((trade) => {
+        const pnl = formatPnL(trade.profit);
+        return {
+            id: trade.id,
+            pair: trade.symbol || '—',
+            direction: trade.side?.toLowerCase() || trade.type?.toLowerCase() || '—',
+            timeAgo: getTimeAgo(trade.time || trade.doneTime),
+            price: formatPrice(trade.price),
+            size: trade.size || trade.volume,
+            pnl: pnl,
+            isBuy: trade.side?.toLowerCase() === 'buy' || trade.type?.toLowerCase()?.includes('buy'),
+        };
+    });
+
+    // Show only last 5 trades for better UX
+    const displayTrades = mappedTrades.slice(0, 5);
 
     return (
         <LinearGradient
@@ -47,47 +71,70 @@ const RecentTrades = ({ data }) => {
                 style={styles.innerGradient}
             >
                 <View style={styles.container}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                        <Ionicons name="analytics-outline" size={24} color="#10b981" />
-                        <Text style={styles.header}>Recent Trades</Text>
+                    <View style={styles.headerRow}>
+                        <View style={styles.headerLeft}>
+                            <Ionicons name="analytics-outline" size={24} color="#10b981" />
+                            <Text style={styles.header}>Recent Trades</Text>
+                        </View>
+                        {trades.length > 5 && (
+                            <Text style={styles.totalCount}>{trades.length} total</Text>
+                        )}
                     </View>
 
-                    {mappedTrades.length === 0 ? (
-                        <Text style={styles.emptyText}>No recent trades yet</Text>
+                    {displayTrades.length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="document-text-outline" size={48} color="#4b5563" />
+                            <Text style={styles.emptyText}>No recent trades yet</Text>
+                            <Text style={styles.emptySubText}>
+                                Trades will appear here when you start trading
+                            </Text>
+                        </View>
                     ) : (
-                        mappedTrades.map((trade, index) => (
-                            <View key={index} style={styles.tradeItem}>
-                                <View style={styles.tradeInfo}>
-                                    <Text style={styles.pair}>{trade.pair}</Text>
-                                    <Text
-                                        style={[
-                                            styles.tradeDetails,
-                                            trade.isBuy ? styles.buy : styles.sell,
-                                        ]}
-                                    >
-                                        {trade?.direction?.toUpperCase()} • {trade.timeAgo}
-                                    </Text>
-                                </View>
-
-                                <View style={styles.priceContainer}>
-                                    <Text
-                                        style={[
-                                            styles.change,
-                                            trade.percent === '—'
-                                                ? styles.neutral
-                                                : trade.percent >= 0
-                                                    ? styles.positive
-                                                    : styles.negative,
-                                        ]}
-                                    >
-                                        {trade.percent === '—' ? '—' : trade.percent >= 0 ? `+${trade.percent}%` : trade.percent}
-                                    </Text>
-                                    <Text style={styles.priceRange}>
-                                        {trade.entry} → {trade.exit}
-                                    </Text>
-                                </View>
+                        <>
+                            {/* Header Row */}
+                            <View style={styles.listHeader}>
+                                <Text style={[styles.listHeaderText, { flex: 2 }]}>Pair</Text>
+                                <Text style={[styles.listHeaderText, { flex: 1.5, textAlign: 'right' }]}>Price</Text>
+                                <Text style={[styles.listHeaderText, { flex: 1.5, textAlign: 'right' }]}>P&L</Text>
                             </View>
-                        ))
+
+                            {displayTrades.map((trade, index) => (
+                                <View key={trade.id || index} style={styles.tradeItem}>
+                                    <View style={styles.tradeInfo}>
+                                        <Text style={styles.pair}>{trade.pair}</Text>
+                                        <Text
+                                            style={[
+                                                styles.tradeDetails,
+                                                trade.isBuy ? styles.buy : styles.sell,
+                                            ]}
+                                        >
+                                            {trade.direction?.toUpperCase()} • {trade.timeAgo}
+                                        </Text>
+                                        {trade.size && (
+                                            <Text style={styles.sizeText}>
+                                                Size: {trade.size}
+                                            </Text>
+                                        )}
+                                    </View>
+
+                                    <View style={styles.priceContainer}>
+                                        <Text style={styles.priceText}>
+                                            ${trade.price}
+                                        </Text>
+                                        {trade.pnl && (
+                                            <Text
+                                                style={[
+                                                    styles.pnlText,
+                                                    { color: trade.pnl.color }
+                                                ]}
+                                            >
+                                                {trade.pnl.text}
+                                            </Text>
+                                        )}
+                                    </View>
+                                </View>
+                            ))}
+                        </>
                     )}
                 </View>
             </LinearGradient>
@@ -109,11 +156,40 @@ const styles = StyleSheet.create({
     container: {
         borderRadius: 8,
     },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     header: {
         color: '#fff',
         fontSize: 20,
         fontWeight: '800',
         marginLeft: 8,
+    },
+    totalCount: {
+        color: '#64748b',
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    listHeader: {
+        flexDirection: 'row',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        marginBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#2D3748',
+    },
+    listHeaderText: {
+        color: '#64748b',
+        fontSize: 12,
+        fontWeight: '600',
+        textTransform: 'uppercase',
     },
     tradeItem: {
         flexDirection: 'row',
@@ -121,13 +197,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#131b2a',
         padding: 12,
-        marginBottom: 10,
+        marginBottom: 8,
         borderRadius: 10,
         borderWidth: 1,
         borderColor: '#2D3748',
     },
     tradeInfo: {
-        flex: 1,
+        flex: 2,
     },
     pair: {
         color: '#FFFFFF',
@@ -135,44 +211,50 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     tradeDetails: {
-        color: '#9CA3AF',
-        fontSize: 13,
-        marginTop: 4,
+        fontSize: 12,
+        marginTop: 2,
         fontWeight: '500',
     },
+    sizeText: {
+        color: '#64748b',
+        fontSize: 10,
+        marginTop: 2,
+    },
     priceContainer: {
+        flex: 1.5,
         alignItems: 'flex-end',
     },
-    priceRange: {
+    priceText: {
         color: '#D1D5DB',
         fontSize: 14,
-        marginTop: 4,
+        fontWeight: '600',
     },
-    change: {
-        fontSize: 15,
+    pnlText: {
+        fontSize: 13,
         fontWeight: '700',
-    },
-    positive: {
-        color: '#10b981', // green
-    },
-    negative: {
-        color: '#ef4444', // red
-    },
-    neutral: {
-        color: '#9CA3AF',
+        marginTop: 2,
     },
     buy: {
-        color: '#10b981', // green for BUY
-        fontWeight: '700',
+        color: '#10b981',
     },
     sell: {
-        color: '#ef4444', // red for SELL
-        fontWeight: '700',
+        color: '#ef4444',
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 40,
     },
     emptyText: {
         color: '#9CA3AF',
-        fontSize: 15,
+        fontSize: 16,
+        fontWeight: '600',
+        marginTop: 12,
+    },
+    emptySubText: {
+        color: '#64748b',
+        fontSize: 13,
         textAlign: 'center',
-        paddingVertical: 20,
+        marginTop: 4,
     },
 });
