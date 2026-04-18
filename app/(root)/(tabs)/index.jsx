@@ -183,27 +183,12 @@ const Index = () => {
     setRefreshing(false);
   };
 
-  const getSubtitle = () => {
-    if (brokerConnected && accountInfo) {
-      const brokerName = accountInfo.brokerName || accountInfo.platform || 'MT5';
-      const equity = (accountInfo.equity || 0).toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-      return `Connected to ${brokerName} • Equity: $${equity}`;
-    }
-    if (dashboardConnected && dashboardData?.totalPortfolio > 0) {
-      return `Portfolio: $${dashboardData.totalPortfolio.toLocaleString()}`;
-    }
-    return "Here's your trading overview for today.";
-  };
-
   return (
     <View style={styles.container}>
       <HomeHeader
         page={'home'}
         title={'Dashboard'}
-        subtitle={getSubtitle()}
+        subtitle={"Here's your trading overview for today."}
       />
 
       {(brokerConnected || dashboardConnected) && (

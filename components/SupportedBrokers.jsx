@@ -27,7 +27,7 @@ const SupportedBrokers = () => {
     const disconnectSheetRef = useRef(null);
 
     const handleConnect = () => {
-        router.push({ pathname: '/brokerapiconnect', params: { apiType: 'MT5' } });
+        router.push({ pathname: 'Broker/brokerapiconnect', params: { apiType: 'MT5' } });
     };
 
     const handleDisconnectPress = () => {

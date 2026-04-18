@@ -77,7 +77,7 @@ const Brokerapiconnect = () => {
             successSheetRef.current?.open();
 
             setTimeout(() => {
-                router.push('brokerconnection');
+                router.push('Broker/brokerconnection');
             }, 1800);
         } catch (err) {
             setLocalError(err.message);
@@ -150,7 +150,7 @@ const Brokerapiconnect = () => {
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.viewButton} onPress={() => router.push('saved-accounts')}>
+                        <TouchableOpacity style={styles.viewButton} onPress={() => router.push('Broker/saved-accounts')}>
                             <Text style={styles.viewText}>View Saved Accounts</Text>
                         </TouchableOpacity>
 

@@ -71,7 +71,7 @@ const SavedAccounts = () => {
     const handleUseAccount = (account) => {
         // Navigate back to connect screen and pre-fill the form
         router.push({
-            pathname: '/brokerapiconnect',
+            pathname: 'Broker/brokerapiconnect',
             params: {
                 apiType: 'MT5',
                 prefill: JSON.stringify({

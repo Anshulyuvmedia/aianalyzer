@@ -12,12 +12,12 @@ const { width } = Dimensions.get('window');
 const BUTTON_WIDTH = Math.min(width * 0.9, 400);
 
 const menuItems = [
-    { name: 'Broker Connection', route: 'brokerconnection', icon: 'cog' },
+    { name: 'Broker Connection', route: 'Broker/brokerconnection', icon: 'cog' },
     { name: 'Reports', route: 'reports', icon: 'chart-line' },
     { name: 'Discovery', route: 'Discovery/InstrumentList', icon: 'rocket' },
     { name: 'Open Positions', route: 'Portfolio/PositionsScreen', icon: 'chart-bar' },
     { name: 'My Trades', route: 'Portfolio/TradesScreen', icon: 'history' },
-    // { name: 'Saved Accounts', route: 'saved-accounts', icon: 'history' },
+    { name: 'Saved Accounts', route: 'saved-accounts', icon: 'history' },
     // { name: 'AI Generated Trade', route: 'aigeneratedtrade', icon: 'robot' },
 ];
 

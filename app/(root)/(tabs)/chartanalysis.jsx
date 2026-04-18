@@ -1,5 +1,5 @@
 import HomeHeader from '@/components/HomeHeader';
-import SelectTradingPairs from '@/components/SelectTradingPairs';
+import SelectTradingPairs from '@/components/chartAnalysisComponents/SelectTradingPairs';
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
