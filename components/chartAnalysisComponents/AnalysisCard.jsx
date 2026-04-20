@@ -11,12 +11,12 @@ export const AnalysisCard = ({ analysis, isExpanded, onToggle }) => {
     const marketSummary = analysisData?.marketSummary;
 
     const biasColor = marketSummary?.overallBias === 'Bullish' ? '#22c55e' :
-        marketSummary?.overallBias === 'Bearish' ? '#ef4444' : '#6b7280';
+        marketSummary?.overallBias === 'Bearish' ? '#ef4444' : '#f59e0b';
 
     const getSignalColor = (signal) => {
         if (signal === 'Bullish') return '#22c55e';
         if (signal === 'Bearish') return '#ef4444';
-        return '#6b7280';
+        return '#f59e0b';
     };
 
     const handleViewPairDetails = (pairItem) => {

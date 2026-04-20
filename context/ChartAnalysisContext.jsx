@@ -104,13 +104,20 @@ export function AnalysisProvider({ children }) {
             setLastAnalysis(newAnalysis);
             await fetchAnalysisHistory();
 
-            return true;
+            return {
+                success: true,
+                data: newAnalysis,
+                analysisData: data  // ← Include the full analysis data
+            };
 
         } catch (err) {
             const userMessage = err?.response?.data?.message || err?.message || 'Could not complete chart analysis.';
             setLastError(userMessage);
             Alert.alert('Analysis Error', userMessage);
-            return false;
+            return {
+                success: false,
+                error: userMessage
+            };
         } finally {
             setIsAnalyzing(false);
         }

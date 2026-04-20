@@ -121,11 +121,6 @@ const OverallanalysisResult = () => {
         <SectionHeader title={section.title} count={section.data.length} />
     );
 
-    // Loading state
-    if (isLoadingHistory && analysisHistory.length === 0) {
-        return <LoadingState />;
-    }
-
     return (
         <View style={styles.container}>
             <HomeHeader
@@ -133,6 +128,9 @@ const OverallanalysisResult = () => {
                 title="Analysis Dashboard"
                 subtitle="AI-powered technical analysis & trading insights"
             />
+            {isLoadingHistory && analysisHistory.length === 0 &&
+                <LoadingState />
+            }
             <FilterBar />
 
             {/* Empty state */}

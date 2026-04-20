@@ -1,23 +1,23 @@
 // app/(root)/ChartAnalysisResults/PairDetailsScreen.jsx
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, SafeAreaView } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 
 export default function PairDetailsScreen() {
     const params = useLocalSearchParams();
     const item = params.data ? JSON.parse(params.data) : null;
     const analysisData = params.analysisData ? JSON.parse(params.analysisData) : null;
-
+    // console.log('analysisData', JSON.stringify(analysisData, null, 2));
     if (!item) {
         return (
-            <SafeAreaView style={styles.errorContainer}>
+            <View style={styles.errorContainer}>
                 <View style={styles.centerContainer}>
                     <Text style={styles.errorText}>No data available</Text>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Text style={styles.backButtonText}>Go Back</Text>
                     </TouchableOpacity>
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
@@ -44,7 +44,7 @@ export default function PairDetailsScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <View style={styles.safeArea}>
             <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.headerSection}>
@@ -57,9 +57,9 @@ export default function PairDetailsScreen() {
                             <Text style={styles.timeframeText}>{item.timeframe}</Text>
                         </View>
                     </View>
-                    <View style={[styles.signalBadge, { backgroundColor: getSignalColor(item.overallSignal) + '15', borderColor: getSignalColor(item.overallSignal) }]}>
-                        <View style={[styles.signalDot, { backgroundColor: getSignalColor(item.overallSignal) }]} />
-                        <Text style={[styles.signalText, { color: getSignalColor(item.overallSignal) }]}>{item.overallSignal}</Text>
+                    <View style={[styles.signalBadge, { backgroundColor: getSignalColor(item.trendAnalysis.direction) + '15', borderColor: getSignalColor(item.trendAnalysis.direction) }]}>
+                        <View style={[styles.signalDot, { backgroundColor: getSignalColor(item.trendAnalysis.direction) }]} />
+                        <Text style={[styles.signalText, { color: getSignalColor(item.trendAnalysis.direction) }]}>{item.trendAnalysis.direction}</Text>
                     </View>
                 </View>
 
@@ -101,14 +101,15 @@ export default function PairDetailsScreen() {
                             </View>
                             <View style={styles.indicatorCard}>
                                 <Text style={styles.indicatorLabel}>MACD</Text>
+                                <Text style={styles.indicatorValue}>{item.technicalIndicators?.macd?.signalLine || '—'}</Text>
                                 <Text style={[styles.indicatorSignal, getStatusStyle(item.technicalIndicators?.macd?.signal)]}>
                                     {item.technicalIndicators?.macd?.signal || 'Neutral'}
                                 </Text>
                             </View>
                             <View style={styles.indicatorCard}>
                                 <Text style={styles.indicatorLabel}>Trend</Text>
-                                <Text style={[styles.indicatorValue, getStatusStyle(item.trend?.direction)]}>
-                                    {item.trend?.direction || 'Neutral'}
+                                <Text style={[styles.indicatorValue, getStatusStyle(item.trendAnalysis?.direction)]}>
+                                    {item.trendAnalysis?.direction || 'Neutral'}
                                 </Text>
                                 <Text style={styles.indicatorSub}>Strength: {item.trend?.strength || '—'}</Text>
                             </View>
@@ -126,35 +127,6 @@ export default function PairDetailsScreen() {
                             </View>
                         </View>
                     </View>
-
-                    {/* MACD Details */}
-                    {item.technicalIndicators?.macd && (
-                        <View style={styles.detailCard}>
-                            <View style={styles.detailHeader}>
-                                <MaterialCommunityIcons name="chart-line" size={20} color="#4ade80" />
-                                <Text style={styles.detailTitle}>MACD Analysis</Text>
-                            </View>
-                            <View style={styles.macdContainer}>
-                                <View style={styles.macdRow}>
-                                    <Text style={styles.macdLabel}>MACD Line:</Text>
-                                    <Text style={styles.macdValue}>{item.technicalIndicators.macd.macdLine?.toFixed(5)}</Text>
-                                </View>
-                                <View style={styles.macdRow}>
-                                    <Text style={styles.macdLabel}>Signal Line:</Text>
-                                    <Text style={styles.macdValue}>{item.technicalIndicators.macd.signalLine?.toFixed(5)}</Text>
-                                </View>
-                                <View style={styles.macdRow}>
-                                    <Text style={styles.macdLabel}>Histogram:</Text>
-                                    <Text style={styles.macdValue}>{item.technicalIndicators.macd.histogram?.toFixed(5)}</Text>
-                                </View>
-                            </View>
-                            <View style={[styles.signalPill, { backgroundColor: getSignalColor(item.technicalIndicators.macd.signal) + '20', alignSelf: 'center' }]}>
-                                <Text style={[styles.signalPillText, { color: getSignalColor(item.technicalIndicators.macd.signal) }]}>
-                                    {item.technicalIndicators.macd.signal}
-                                </Text>
-                            </View>
-                        </View>
-                    )}
 
                     {/* Bollinger Bands */}
                     {item.technicalIndicators?.bollingerBands && (
@@ -310,7 +282,7 @@ export default function PairDetailsScreen() {
                     )}
                 </ScrollView>
             </View>
-        </SafeAreaView>
+        </View>
     );
 }
 

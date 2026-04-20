@@ -144,7 +144,6 @@ const SelectTradingPairs = () => {
             return;
         }
         console.log('Sending analysisStyle:', analysisStyle);
-        console.log('analysisStyle type:', typeof analysisStyle);
 
         const result = await requestAnalysis({
             activeTab,
@@ -153,6 +152,8 @@ const SelectTradingPairs = () => {
             timeframe,
             analysisStyle,
         });
+
+        console.log('result', result);
 
         if (result && result.success) {
             setSelectedPairs([]);
@@ -168,8 +169,11 @@ const SelectTradingPairs = () => {
             // Navigate with the analysis data
             router.push({
                 pathname: '../ChartAnalysisResults/OverallanalysisResult',
-                params: { analysisData: JSON.stringify(result) }
+                params: { analysisData: JSON.stringify(result.analysisData) }
             });
+        } else {
+            // Handle failure
+            Alert.alert('Analysis Failed', result?.error || 'Unknown error occurred');
         }
     };
 
