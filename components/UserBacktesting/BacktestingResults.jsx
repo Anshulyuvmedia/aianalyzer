@@ -1,3 +1,4 @@
+// app/components/UserBacktesting/BacktestingResults.jsx
 import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
 import React from 'react';
 import LinearGradient from 'react-native-linear-gradient';

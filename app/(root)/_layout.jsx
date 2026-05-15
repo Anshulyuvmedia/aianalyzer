@@ -16,15 +16,19 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="ChartAnalysisResults/OverallanalysisResult" options={{ headerShown: false }} />
             <Stack.Screen name="ChartAnalysisResults/PairDetailsScreen" options={{ headerShown: false }} />
             <Stack.Screen name="ChartAnalysisResults/ChartViewScreen" options={{ headerShown: false }} />
-            
-            <Stack.Screen name="BacktestingResultsPage" options={{ headerShown: false }} />
+
+            <Stack.Screen name="Backtesting/AIGuidance" options={{ headerShown: false }} />
+            <Stack.Screen name="Backtesting/BacktestingResults" options={{ headerShown: false }} />
+            <Stack.Screen name="Backtesting/UserStrategies" options={{ headerShown: false }} />
+            <Stack.Screen name="Backtesting/UserStrategyDetails" options={{ headerShown: false }} />
+
             <Stack.Screen name="StrategyDetail/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="StrategyPerformance/[id]" options={{ headerShown: false }} />
-            
+
             <Stack.Screen name="Discovery/InstrumentList" options={{ headerShown: false }} />
             <Stack.Screen name="Discovery/[symbol]" options={{ headerShown: false }} />
             <Stack.Screen name="Discovery/PlaceOrderScreen" options={{ headerShown: false }} />
-            
+
             <Stack.Screen name="Portfolio/PositionsScreen" options={{ headerShown: false }} />
             <Stack.Screen name="Portfolio/PositionDetailScreen" options={{ headerShown: false }} />
             <Stack.Screen name="Portfolio/TradesScreen" options={{ headerShown: false }} />

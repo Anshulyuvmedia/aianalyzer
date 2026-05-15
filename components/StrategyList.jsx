@@ -1,17 +1,36 @@
 // components/StrategyList.jsx 
 import { MaterialCommunityIcons, SimpleLineIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { CopyStrategyContext } from '@/context/CopyStrategyContext';
 
-const StrategyList = () => {  // ← no need to receive strategies as prop anymore
-    const { strategies, toggleFollow, } = useContext(CopyStrategyContext);
+const StrategyList = () => {
+    const { strategies, toggleFollow } = useContext(CopyStrategyContext);
+    const [selectedAssetClass, setSelectedAssetClass] = useState('ALL');
+
     // console.log('strategies', strategies);
+
     const handleToggle = (strategy) => {
         toggleFollow(strategy._id, !strategy.isFollowing);
     };
+
+    const assetClasses = [
+        { key: 'ALL', label: 'All', icon: 'apps' },
+        { key: 'FOREX', label: 'Forex', icon: 'currency-usd' },
+        { key: 'CRYPTO', label: 'Crypto', icon: 'bitcoin' },
+        { key: 'COMMODITIES', label: 'Commodities', icon: 'chart-line' },
+        { key: 'INDICES', label: 'Indices', icon: 'trending-up' },
+        { key: 'STOCKS', label: 'Stocks', icon: 'finance' },
+        { key: 'OTHERS', label: 'Others', icon: 'dots-horizontal' }
+    ];
+
+    // Filter strategies based on selected asset class
+    const filteredStrategies = strategies?.filter(strategy => {
+        if (selectedAssetClass === 'ALL') return true;
+        return strategy.assetClass === selectedAssetClass;
+    });
 
     const renderStrategyItem = ({ item }) => (
         <TouchableOpacity
@@ -29,7 +48,7 @@ const StrategyList = () => {  // ← no need to receive strategies as prop anymo
             <View style={styles.cardContent}>
                 <View style={styles.topRow}>
                     <Text style={styles.strategyName}>{item.name}</Text>
-                    
+
                     <TouchableOpacity
                         style={[
                             styles.followBtn,
@@ -49,14 +68,14 @@ const StrategyList = () => {  // ← no need to receive strategies as prop anymo
                 </View>
 
                 <View style={styles.tagsContainer}>
-                    <View style={[styles.tag, styles.tagAsset]}>
+                    <View style={[styles.tag, getAssetClassStyle(item.assetClass)]}>
                         <Text style={styles.tagText}>{item.assetClass}</Text>
                     </View>
                     <View style={[styles.tag, styles.tagType]}>
                         <Text style={styles.tagText}>{item.strategyType}</Text>
                     </View>
                     <View style={[styles.tag, styles.symbols]}>
-                        <Text style={styles.tagText}>{item.symbols}</Text>
+                        <Text style={styles.tagText}>{item.symbols?.join(', ')}</Text>
                     </View>
                     {item.timeframes?.slice(0, 2).map((tf, i) => (
                         <View key={i} style={styles.tag}>
@@ -69,18 +88,43 @@ const StrategyList = () => {  // ← no need to receive strategies as prop anymo
                         </View>
                     ))}
                 </View>
-
-                {/* <View style={styles.statsRow}>
-                    <View style={styles.stat}>
-                        <Text style={styles.statValue}>{item.followerCount || 0}</Text>
-                        <Text style={styles.statLabel}>Followers</Text>
-                    </View>
-                    <View style={styles.stat}>
-                        <Text style={styles.statValue}>N/A</Text>
-                        <Text style={styles.statLabel}>Avg Return</Text>
-                    </View>
-                </View> */}
             </View>
+        </TouchableOpacity>
+    );
+
+    // Helper function to get asset class specific styles
+    const getAssetClassStyle = (assetClass) => {
+        switch (assetClass) {
+            case 'FOREX': return styles.tagForex;
+            case 'CRYPTO': return styles.tagCrypto;
+            case 'COMMODITIES': return styles.tagCommodities;
+            case 'INDICES': return styles.tagIndices;
+            case 'STOCKS': return styles.tagStocks;
+            default: return styles.tagOthers;
+        }
+    };
+
+    // Render tab item
+    const renderTab = (tab) => (
+        <TouchableOpacity
+            key={tab.key}
+            style={[
+                styles.tab,
+                selectedAssetClass === tab.key && styles.activeTab
+            ]}
+            onPress={() => setSelectedAssetClass(tab.key)}
+        >
+            <MaterialCommunityIcons
+                name={tab.icon}
+                size={20}
+                color={selectedAssetClass === tab.key ? '#10B981' : '#9CA3AF'}
+            />
+            <Text style={[
+                styles.tabText,
+                selectedAssetClass === tab.key && styles.activeTabText
+            ]}>
+                {tab.label}
+            </Text>
         </TouchableOpacity>
     );
 
@@ -104,11 +148,32 @@ const StrategyList = () => {  // ← no need to receive strategies as prop anymo
                             <Text style={styles.headerText}>Public Strategies</Text>
                         </View>
 
-                        {strategies?.length === 0 ? (
-                            <Text style={styles.emptyText}>No public strategies available yet</Text>
+                        {/* Tabs Section */}
+                        <View style={styles.tabsContainer}>
+                            <FlatList
+                                horizontal
+                                data={assetClasses}
+                                renderItem={({ item }) => renderTab(item)}
+                                keyExtractor={(item) => item.key}
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.tabsList}
+                            />
+                        </View>
+
+                        {/* Count of filtered strategies */}
+                        <View style={styles.countContainer}>
+                            <Text style={styles.countText}>
+                                {filteredStrategies?.length || 0} {filteredStrategies?.length === 1 ? 'Strategy' : 'Strategies'}
+                            </Text>
+                        </View>
+
+                        {filteredStrategies?.length === 0 ? (
+                            <Text style={styles.emptyText}>
+                                No {selectedAssetClass !== 'ALL' ? selectedAssetClass.toLowerCase() : ''} strategies available
+                            </Text>
                         ) : (
                             <FlatList
-                                data={strategies}           // ← use context value directly
+                                data={filteredStrategies}
                                 renderItem={renderStrategyItem}
                                 keyExtractor={(item) => item._id}
                                 showsVerticalScrollIndicator={false}
@@ -121,18 +186,20 @@ const StrategyList = () => {  // ← no need to receive strategies as prop anymo
     );
 };
 
-// Updated styles (simplified & adapted for strategies)
 const styles = StyleSheet.create({
     container: {
         marginBottom: 10,
+        flex: 1,
     },
     gradientBoxBorder: {
         borderRadius: 15,
         padding: 1,
+        flex: 1,
     },
     innerGradient: {
         borderRadius: 14,
         padding: 10,
+        flex: 1,
     },
     cardContent: {
         padding: 15,
@@ -147,6 +214,44 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#FFFFFF',
         marginLeft: 8,
+    },
+    tabsContainer: {
+        marginBottom: 12,
+    },
+    tabsList: {
+        paddingHorizontal: 4,
+    },
+    tab: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginRight: 12,
+        borderRadius: 20,
+        backgroundColor: '#374151',
+        gap: 6,
+    },
+    activeTab: {
+        backgroundColor: '#1f2937',
+        borderWidth: 1,
+        borderColor: '#10B981',
+    },
+    tabText: {
+        color: '#9CA3AF',
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    activeTabText: {
+        color: '#10B981',
+    },
+    countContainer: {
+        marginBottom: 12,
+        paddingHorizontal: 8,
+    },
+    countText: {
+        color: '#6B7280',
+        fontSize: 12,
+        fontWeight: '500',
     },
     strategyCard: {
         backgroundColor: '#1f2937',
@@ -168,9 +273,6 @@ const styles = StyleSheet.create({
         right: 0,
         height: 80,
     },
-    strategyInfo: {
-        flex: 1,
-    },
     topRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -186,18 +288,6 @@ const styles = StyleSheet.create({
         marginRight: 12,
         textTransform: 'capitalize',
     },
-    description: {
-        color: '#9CA3AF',
-        fontSize: 14,
-        lineHeight: 20,
-        marginBottom: 12,
-        fontFamily: 'Sora-Regular',
-    },
-    infoRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginBottom: 12,
-    },
     tagsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -211,9 +301,9 @@ const styles = StyleSheet.create({
         marginRight: 8,
         marginBottom: 8,
     },
-    tagAsset: { backgroundColor: '#6D28D9' }, // purple
-    tagType: { backgroundColor: '#059669' }, // green
-    symbols: { backgroundColor: '#6A28A9' }, // green
+    tagAsset: { backgroundColor: '#6D28D9' },
+    tagType: { backgroundColor: '#059669' },
+    symbols: { backgroundColor: '#6A28A9' },
     tagText: {
         color: 'white',
         fontSize: 12,
@@ -240,31 +330,18 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginLeft: 6,
     },
-    statsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    statItem: {
-        alignItems: 'center',
-    },
-    statValue: {
-        color: '#10B981',
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    statLabel: {
-        color: '#9CA3AF',
-        fontSize: 12,
-        marginTop: 4,
-    },
     emptyText: {
         color: '#9CA3AF',
         fontSize: 16,
         textAlign: 'center',
         paddingVertical: 30,
     },
-    tagCrypto: { backgroundColor: '#6D28D9' }, // purple for crypto
-    tagForex: { backgroundColor: '#059669' }, // green for forex
+    tagCrypto: { backgroundColor: '#8B5CF6' },
+    tagForex: { backgroundColor: '#059669' },
+    tagCommodities: { backgroundColor: '#D97706' },
+    tagIndices: { backgroundColor: '#DC2626' },
+    tagStocks: { backgroundColor: '#0891B2' },
+    tagOthers: { backgroundColor: '#6B7280' },
 });
 
 export default StrategyList;

@@ -160,6 +160,7 @@ const Brokerapiconnect = () => {
                             <TextInput
                                 style={[styles.input, loading && styles.inputDisabled]}
                                 placeholder="e.g. My Demo Account"
+                                placeholderTextColor="#6B7280"
                                 value={form.name}
                                 onChangeText={(text) => setForm({ ...form, name: text })}
                                 editable={!loading}
@@ -172,6 +173,7 @@ const Brokerapiconnect = () => {
                             <TextInput
                                 style={[styles.input, loading && styles.inputDisabled]}
                                 placeholder="Search servers"
+                                placeholderTextColor="#6B7280"
                                 value={form.server}
                                 onChangeText={(text) => {
                                     setForm({ ...form, server: text });
@@ -209,6 +211,7 @@ const Brokerapiconnect = () => {
                             <TextInput
                                 style={[styles.input, loading && styles.inputDisabled]}
                                 placeholder="Enter account no."
+                                placeholderTextColor="#6B7280"
                                 value={form.login}
                                 onChangeText={(text) => setForm({ ...form, login: text })}
                                 keyboardType="numeric"
@@ -221,6 +224,7 @@ const Brokerapiconnect = () => {
                             <TextInput
                                 style={[styles.input, loading && styles.inputDisabled]}
                                 placeholder="Enter your MT5 password"
+                                placeholderTextColor="#6B7280"
                                 value={form.password}
                                 onChangeText={(text) => setForm({ ...form, password: text })}
                                 secureTextEntry

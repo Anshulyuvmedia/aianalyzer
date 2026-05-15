@@ -461,6 +461,57 @@ export const BrokerProvider = ({ children }) => {
         }
     };
 
+    const switchAccount = async (metaApiAccountId) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await api.post(`/api/appdata/switch-account/${metaApiAccountId}`);
+
+            if (response.data?.success) {
+                const connectionData = {
+                    metaApiAccountId: response.data.data.activeAccount.metaApiAccountId,
+                    name: response.data.data.activeAccount.name,
+                    server: response.data.data.activeAccount.server,
+                    login: response.data.data.activeAccount.login,
+                    connection_status: true,
+                    connectedAt: new Date().toISOString(),
+                    lastChecked: new Date().toISOString(),
+                };
+
+                await AsyncStorage.setItem('brokerConnection', JSON.stringify(connectionData));
+                setBrokerConnection(connectionData);
+                setIsConnected(true);
+
+                await checkConnectionStatus();
+                await fetchPositions();
+                await fetchOrders();
+
+                return connectionData;
+            }
+            throw new Error(response.data?.error || 'Failed to switch account');
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || err.message;
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getUserAccounts = async () => {
+        try {
+            const response = await api.get('/api/appdata/user-accounts');
+            if (response.data?.success) {
+                return response.data.data;
+            }
+            return [];
+        } catch (err) {
+            console.warn('Failed to load user accounts:', err.message);
+            return [];
+        }
+    };
+
     const value = {
         // Connection states
         isConnected,
@@ -491,6 +542,9 @@ export const BrokerProvider = ({ children }) => {
         cancelOrder,
         getOrderHistory,
         modifyOrder,
+
+        switchAccount,
+        getUserAccounts,
     };
 
     return <BrokerContext.Provider value={value}>{children}</BrokerContext.Provider>;
