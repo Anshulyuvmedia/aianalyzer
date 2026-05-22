@@ -70,6 +70,13 @@ export function AnalysisProvider({ children }) {
 
     // Request new analysis
     const requestAnalysis = useCallback(async (params) => {
+
+        console.log('📤 REQUEST ANALYSIS:', {
+            style: params.analysisStyle,
+            pairs: params.selectedPairs?.length,
+            timeframe: params.timeframe
+        });
+
         setIsAnalyzing(true);
         setLastError(null);
 
@@ -90,6 +97,31 @@ export function AnalysisProvider({ children }) {
             });
 
             const data = response.data;
+
+            console.log('📥 RESPONSE DATA STRUCTURE:', {
+                hasSuccess: data.success,
+                hasAnalysisData: !!data.analysisData,
+                analysisDataKeys: data.analysisData ? Object.keys(data.analysisData) : [],
+                overallAnalysisCount: data.analysisData?.overallAnalysis?.length,
+                chartAnnotationsCount: data.analysisData?.chartAnnotations?.length,
+                requestStyle: data.analysisData?.request?.analysisStyle
+            });
+
+            // Log first pair data
+            const firstPair = data.analysisData?.overallAnalysis?.[0];
+            if (firstPair) {
+                console.log('🔍 FIRST PAIR DATA:', {
+                    pair: firstPair.pair,
+                    hasPatterns: !!firstPair.patterns,
+                    patternsCount: firstPair.patterns?.length,
+                    hasKeyLevels: !!firstPair.keyLevels,
+                    keyLevelsCount: firstPair.keyLevels?.length,
+                    hasSwingPoints: !!firstPair.swingPoints,
+                    swingPointsCount: firstPair.swingPoints?.length,
+                    samplePattern: firstPair.patterns?.[0],
+                    sampleKeyLevel: firstPair.keyLevels?.[0]
+                });
+            }
 
             if (!data.success) {
                 throw new Error(data.message || 'Analysis failed');
@@ -216,6 +248,70 @@ export function AnalysisProvider({ children }) {
         fetchAnalysisHistory();
     }, [fetchAnalysisHistory]);
 
+    const deleteAnalysis = useCallback(async (analysisId) => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            if (!token) {
+                throw new Error('No token data found');
+            }
+
+            const url = `${API_BASE_URL}/api/appdata/chart-analysis/${analysisId}`;
+            console.log('Deleting analysis:', analysisId);
+
+            const response = await axios.delete(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data.success) {
+                setAnalysisHistory(prev => prev.filter(a => a._id !== analysisId));
+                console.log('Analysis deleted successfully');
+                return { success: true };
+            } else {
+                throw new Error(response.data.error || 'Delete failed');
+            }
+        } catch (error) {
+            console.error('Delete analysis error:', error.response?.data || error.message);
+            Alert.alert('Delete Failed', error.response?.data?.error || error.message || 'Could not delete analysis');
+            return { success: false, error: error.message };
+        }
+    }, []);
+
+    const deleteMultipleAnalyses = useCallback(async (analysisIds) => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            if (!token) {
+                throw new Error('No user data found');
+            }
+
+            const url = `${API_BASE_URL}/api/appdata/chart-analysis/delete-multiple`;
+            console.log('Deleting multiple analyses:', analysisIds);
+
+            const response = await axios.post(url, {
+                analysisIds: analysisIds
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.data.success) {
+                setAnalysisHistory(prev => prev.filter(a => !analysisIds.includes(a._id)));
+                Alert.alert('Success', response.data.message);
+                return { success: true, deletedCount: response.data.deletedCount };
+            } else {
+                throw new Error(response.data.error || 'Delete failed');
+            }
+        } catch (error) {
+            console.error('Delete multiple analyses error:', error.response?.data || error.message);
+            Alert.alert('Delete Failed', error.response?.data?.error || error.message || 'Could not delete analyses');
+            return { success: false, error: error.message };
+        }
+    }, []);
+
     const value = {
         isAnalyzing,
         isLoadingHistory,
@@ -230,7 +326,9 @@ export function AnalysisProvider({ children }) {
         updateFilters,
         getFilteredAnalyses,
         getPaginatedAnalyses,
-        loadMoreAnalyses
+        loadMoreAnalyses,
+        deleteAnalysis,
+        deleteMultipleAnalyses,
     };
 
     return (

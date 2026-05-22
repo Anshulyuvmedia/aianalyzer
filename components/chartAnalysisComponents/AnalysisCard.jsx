@@ -2,9 +2,14 @@
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { router } from 'expo-router';
+import { useState } from 'react';
 
-export const AnalysisCard = ({ analysis, isExpanded, onToggle }) => {
+export const AnalysisCard = ({ analysis, isExpanded, onToggle, onDelete }) => {
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const analysisData = analysis.analysisData;
     const overallAnalysis = analysisData?.overallAnalysis || [];
     const analysisDate = new Date(analysis.createdAt || analysis.requestedAt);
@@ -19,6 +24,13 @@ export const AnalysisCard = ({ analysis, isExpanded, onToggle }) => {
         return '#f59e0b';
     };
 
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        await onDelete(analysis._id);
+        setIsDeleting(false);
+        setShowDeleteModal(false);
+    };
+
     const handleViewPairDetails = (pairItem) => {
         router.push({
             pathname: '../ChartAnalysisResults/PairDetailsScreen',
@@ -30,100 +42,122 @@ export const AnalysisCard = ({ analysis, isExpanded, onToggle }) => {
     };
 
     return (
-        <LinearGradient
-            colors={['#AEAED4', '#000', '#AEAED4']}
-            start={{ x: 1, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.gradientBoxBorder}
-        >
+        <>
             <LinearGradient
-                colors={['#1e2836', '#111827', '#1e2836']}
-                start={{ x: 0.4, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.innerGradient}
+                colors={['#AEAED4', '#000', '#AEAED4']}
+                start={{ x: 1, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.gradientBoxBorder}
             >
-                <TouchableOpacity
-                    style={styles.analysisHeader}
-                    onPress={onToggle}
-                    activeOpacity={0.7}
+                <LinearGradient
+                    colors={['#1e2836', '#111827', '#1e2836']}
+                    start={{ x: 0.4, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.innerGradient}
                 >
-                    <View style={styles.analysisHeaderLeft}>
-                        <Text style={styles.analysisTime}>
-                            {analysisDate.toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                            })}
-                        </Text>
-                        <View style={styles.statsBadge}>
-                            <Text style={styles.statsBadgeText}>{overallAnalysis.length} pairs</Text>
-                        </View>
-                        <View style={styles.styleBadge}>
-                            <Text style={styles.styleBadgeText}>
-                                {analysisData?.request?.analysisStyle || 'Price Action'}
+                    <TouchableOpacity
+                        style={styles.analysisHeader}
+                        onPress={onToggle}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.analysisHeaderLeft}>
+                            <Text style={styles.analysisTime}>
+                                {analysisDate.toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })}
                             </Text>
+                            {/* <View style={styles.statsBadge}>
+                            <Text style={styles.statsBadgeText}>{overallAnalysis.length} pairs</Text>
+                        </View> */}
+                            <View style={styles.styleBadge}>
+                                <Text style={styles.styleBadgeText}>
+                                    {analysisData?.request?.analysisStyle || 'Price Action'}
+                                </Text>
+                            </View>
                         </View>
-                    </View>
-                    <View style={[styles.biasBadge, { backgroundColor: biasColor + '20', borderColor: biasColor }]}>
-                        <Text style={[styles.biasText, { color: biasColor }]}>
-                            {marketSummary?.overallBias || 'Neutral'}
-                        </Text>
-                    </View>
-                    <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
-                </TouchableOpacity>
+                        <View style={styles.headerRight}>
+                            <View style={[styles.biasBadge, { backgroundColor: biasColor + '20', borderColor: biasColor }]}>
+                                <Text style={[styles.biasText, { color: biasColor }]}>
+                                    {marketSummary?.overallBias || 'Neutral'}
+                                </Text>
+                            </View>
 
-                {isExpanded && (
-                    <View style={styles.expandedContent}>
-                        {overallAnalysis.filter(item => !item.error).map((item, idx) => {
-                            const signalColor = getSignalColor(
-                                item.technicalIndicators?.rsi?.bias === 'Bullish' ? 'Bullish' :
-                                    item.technicalIndicators?.rsi?.bias === 'Bearish' ? 'Bearish' : 'Neutral'
-                            );
+                            {/* Delete Button */}
+                            <TouchableOpacity
+                                onPress={() => setShowDeleteModal(true)}
+                                style={styles.deleteIcon}
+                            >
+                                <Feather name="trash-2" size={16} color="#ef4444" />
+                            </TouchableOpacity>
 
-                            return (
-                                <TouchableOpacity
-                                    key={idx}
-                                    style={styles.pairItem}
-                                    onPress={() => handleViewPairDetails(item)}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={styles.pairHeader}>
-                                        <View>
-                                            <Text style={styles.pairSymbol}>{item.pair}</Text>
-                                            <Text style={styles.pairTimeframe}>{item.timeframe}</Text>
+                            <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                        </View>
+                    </TouchableOpacity>
+
+                    {isExpanded && (
+                        <View style={styles.expandedContent}>
+                            {overallAnalysis.filter(item => !item.error).map((item, idx) => {
+                                const signalColor = getSignalColor(
+                                    item.technicalIndicators?.rsi?.bias === 'Bullish' ? 'Bullish' :
+                                        item.technicalIndicators?.rsi?.bias === 'Bearish' ? 'Bearish' : 'Neutral'
+                                );
+
+                                return (
+                                    <TouchableOpacity
+                                        key={idx}
+                                        style={styles.pairItem}
+                                        onPress={() => handleViewPairDetails(item)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.pairHeader}>
+                                            <View>
+                                                <Text style={styles.pairSymbol}>{item.pair}</Text>
+                                                <Text style={styles.pairTimeframe}>{item.timeframe}</Text>
+                                            </View>
+                                            <View style={styles.pairActions}>
+                                                <View style={[styles.signalBadge, { backgroundColor: signalColor + '15', borderColor: signalColor }]}>
+                                                    <View style={[styles.signalDot, { backgroundColor: signalColor }]} />
+                                                    <Text style={[styles.signalText, { color: signalColor }]}>
+                                                        {item.technicalIndicators?.rsi?.bias || 'Neutral'}
+                                                    </Text>
+                                                </View>
+                                            </View>
                                         </View>
-                                        <View style={styles.pairActions}>
-                                            <View style={[styles.signalBadge, { backgroundColor: signalColor + '15', borderColor: signalColor }]}>
-                                                <View style={[styles.signalDot, { backgroundColor: signalColor }]} />
-                                                <Text style={[styles.signalText, { color: signalColor }]}>
-                                                    {item.technicalIndicators?.rsi?.bias || 'Neutral'}
+
+                                        <View style={styles.pairStats}>
+                                            <View style={styles.pairStat}>
+                                                <Text style={styles.pairStatLabel}>Price</Text>
+                                                <Text style={styles.pairStatValue}>{item.lastPrice?.toFixed(4) || '—'}</Text>
+                                            </View>
+                                            <View style={styles.pairStat}>
+                                                <Text style={styles.pairStatLabel}>RSI</Text>
+                                                <Text style={styles.pairStatValue}>{item.technicalIndicators?.rsi?.value || '—'}</Text>
+                                            </View>
+                                            <View style={styles.pairStat}>
+                                                <Text style={styles.pairStatLabel}>Trend</Text>
+                                                <Text style={[styles.pairStatValue, { color: getSignalColor(item.trendAnalysis?.direction) }]}>
+                                                    {item.trendAnalysis?.direction || 'Neutral'}
                                                 </Text>
                                             </View>
                                         </View>
-                                    </View>
-
-                                    <View style={styles.pairStats}>
-                                        <View style={styles.pairStat}>
-                                            <Text style={styles.pairStatLabel}>Price</Text>
-                                            <Text style={styles.pairStatValue}>{item.lastPrice?.toFixed(4) || '—'}</Text>
-                                        </View>
-                                        <View style={styles.pairStat}>
-                                            <Text style={styles.pairStatLabel}>RSI</Text>
-                                            <Text style={styles.pairStatValue}>{item.technicalIndicators?.rsi?.value || '—'}</Text>
-                                        </View>
-                                        <View style={styles.pairStat}>
-                                            <Text style={styles.pairStatLabel}>Trend</Text>
-                                            <Text style={[styles.pairStatValue, { color: getSignalColor(item.trendAnalysis?.direction) }]}>
-                                                {item.trendAnalysis?.direction || 'Neutral'}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-                )}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    )}
+                </LinearGradient>
             </LinearGradient>
-        </LinearGradient>
+
+            <DeleteConfirmationModal
+                visible={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                itemCount={1}
+                itemName="analysis"
+                isDeleting={isDeleting}
+            />
+        </>
     );
 };
 
@@ -163,7 +197,7 @@ const styles = StyleSheet.create({
     },
     statsBadgeText: {
         color: '#6b7280',
-        fontSize: 10,
+        fontSize: 12,
     },
     styleBadge: {
         backgroundColor: '#3b82f620',
@@ -175,13 +209,14 @@ const styles = StyleSheet.create({
     },
     styleBadgeText: {
         color: '#60a5fa',
-        fontSize: 9,
+        fontSize: 12,
     },
     biasBadge: {
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 12,
         borderWidth: 1,
+        marginRight: 4,
     },
     biasText: {
         fontSize: 11,
@@ -256,5 +291,15 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '500',
         marginTop: 2,
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    deleteIcon: {
+        padding: 4,
+        borderRadius: 6,
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
     },
 });
