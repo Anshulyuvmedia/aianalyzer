@@ -14,8 +14,7 @@ import {
     TextInput,
     RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { FontAwesome, Feather } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -217,7 +216,7 @@ const BackTesting = () => {
                 >
                     <View style={styles.strategyCardHeader}>
                         <View style={styles.symbolContainer}>
-                            <Feather name={getMarketIcon(strategy.market)} size={18} color="#60a5fa" />
+                            <FontAwesome name={getMarketIcon(strategy.market)} size={18} color="#60a5fa" />
                             <Text style={styles.strategySymbol}>{strategy.symbol}</Text>
                         </View>
                         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(strategy.status) + '20' }]}>

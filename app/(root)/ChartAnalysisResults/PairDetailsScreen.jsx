@@ -6,8 +6,12 @@ import { useLocalSearchParams, router } from 'expo-router';
 export default function PairDetailsScreen() {
     const params = useLocalSearchParams();
     const item = params.data ? JSON.parse(params.data) : null;
-    const analysisData = params.analysisData ? JSON.parse(params.analysisData) : null;
-    // console.log('analysisData', JSON.stringify(analysisData, null, 2));
+    const rawAnalysisData = params.analysisData ? JSON.parse(params.analysisData) : null;
+    // Global AI insights live at analysisData.analysisData.aiInsights (DB doc) or analysisData.aiInsights (API response)
+    const globalAiInsights = rawAnalysisData?.analysisData?.aiInsights || rawAnalysisData?.aiInsights || null;
+    // Per-pair AI recommendation if available
+    const pairAiInsight = globalAiInsights?.pairAnalyses?.find(p => p.pair === item?.pair) || null;
+
     if (!item) {
         return (
             <View style={styles.errorContainer}>
@@ -38,7 +42,7 @@ export default function PairDetailsScreen() {
             pathname: '../ChartAnalysisResults/ChartViewScreen',
             params: {
                 pair: JSON.stringify(item),
-                analysisData: JSON.stringify(analysisData),
+                analysisData: JSON.stringify(rawAnalysisData),
             },
         });
     };
@@ -57,9 +61,9 @@ export default function PairDetailsScreen() {
                             <Text style={styles.timeframeText}>{item.timeframe}</Text>
                         </View>
                     </View>
-                    <View style={[styles.signalBadge, { backgroundColor: getSignalColor(item.trendAnalysis.direction) + '15', borderColor: getSignalColor(item.trendAnalysis.direction) }]}>
-                        <View style={[styles.signalDot, { backgroundColor: getSignalColor(item.trendAnalysis.direction) }]} />
-                        <Text style={[styles.signalText, { color: getSignalColor(item.trendAnalysis.direction) }]}>{item.trendAnalysis.direction}</Text>
+                    <View style={[styles.signalBadge, { backgroundColor: getSignalColor(item.trendAnalysis?.direction) + '15', borderColor: getSignalColor(item.trendAnalysis?.direction) }]}>
+                        <View style={[styles.signalDot, { backgroundColor: getSignalColor(item.trendAnalysis?.direction) }]} />
+                        <Text style={[styles.signalText, { color: getSignalColor(item.trendAnalysis?.direction) }]}>{item.trendAnalysis?.direction || 'Neutral'}</Text>
                     </View>
                 </View>
 
@@ -162,7 +166,7 @@ export default function PairDetailsScreen() {
                     )}
 
                     {/* Support & Resistance */}
-                    {item.supportResistance && (item.supportResistance.support || item.supportResistance.resistance) && (
+                    {(item.technicalIndicators?.supportResistance || item.supportResistance) && (
                         <View style={styles.detailCard}>
                             <View style={styles.detailHeader}>
                                 <Feather name="activity" size={20} color="#60a5fa" />
@@ -171,115 +175,125 @@ export default function PairDetailsScreen() {
                             <View style={styles.levelContainer}>
                                 <View style={styles.levelItem}>
                                     <Text style={styles.levelLabel}>Resistance</Text>
-                                    <Text style={styles.levelPrice}>{item.supportResistance.resistance?.price?.toFixed(4) || '—'}</Text>
+                                    <Text style={styles.levelPrice}>{(item.technicalIndicators?.supportResistance?.resistance?.price || item.supportResistance?.resistance?.price || '—')?.toFixed?.(4) || '—'}</Text>
                                     <View style={[styles.levelStrengthBadge, { backgroundColor: '#ef444415', borderColor: '#ef4444' }]}>
-                                        <Text style={[styles.levelStrengthText, { color: '#ef4444' }]}>{item.supportResistance.resistance?.strength || 'Weak'}</Text>
+                                        <Text style={[styles.levelStrengthText, { color: '#ef4444' }]}>{item.technicalIndicators?.supportResistance?.resistance?.strength || item.supportResistance?.resistance?.strength || 'Weak'}</Text>
                                     </View>
                                 </View>
                                 <View style={styles.levelDivider} />
                                 <View style={styles.levelItem}>
                                     <Text style={styles.levelLabel}>Support</Text>
-                                    <Text style={styles.levelPrice}>{item.supportResistance.support?.price?.toFixed(4) || '—'}</Text>
+                                    <Text style={styles.levelPrice}>{(item.technicalIndicators?.supportResistance?.support?.price || item.supportResistance?.support?.price || '—')?.toFixed?.(4) || '—'}</Text>
                                     <View style={[styles.levelStrengthBadge, { backgroundColor: '#22c55e15', borderColor: '#22c55e' }]}>
-                                        <Text style={[styles.levelStrengthText, { color: '#22c55e' }]}>{item.supportResistance.support?.strength || 'Weak'}</Text>
+                                        <Text style={[styles.levelStrengthText, { color: '#22c55e' }]}>{item.technicalIndicators?.supportResistance?.support?.strength || item.supportResistance?.support?.strength || 'Weak'}</Text>
                                     </View>
                                 </View>
                             </View>
                         </View>
                     )}
 
+                    
+                    {/* Per-Pair Trade Recommendation from AI */}
+                    {pairAiInsight?.recommendation?.action && pairAiInsight.recommendation.action !== 'HOLD' && (
+                        <View style={[styles.recommendationCard, {
+                            backgroundColor: pairAiInsight.recommendation.action === 'BUY' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
+                            borderLeftColor: pairAiInsight.recommendation.action === 'BUY' ? '#22c55e' : '#ef4444',
+                        }]}>
+                            <View style={styles.recommendationHeader}>
+                                <Text style={styles.recommendationTitle}>AI Trade Recommendation</Text>
+                                <View style={[styles.recommendationActionBadge, { backgroundColor: pairAiInsight.recommendation.action === 'BUY' ? '#22c55e' : '#ef4444' }]}>
+                                    <Text style={styles.recommendationActionText}>{pairAiInsight.recommendation.action}</Text>
+                                </View>
+                            </View>
+                            {pairAiInsight.recommendation.entry != null && (
+                                <View style={styles.recommendationDetails}>
+                                    <View style={styles.recommendationRow}>
+                                        <Text style={styles.recommendationLabel}>Entry Price</Text>
+                                        <Text style={styles.recommendationValue}>{pairAiInsight.recommendation.entry?.toFixed?.(4) || pairAiInsight.recommendation.entry}</Text>
+                                    </View>
+                                    {pairAiInsight.recommendation.stopLoss != null && (
+                                        <View style={styles.recommendationRow}>
+                                            <Text style={styles.recommendationLabel}>Stop Loss</Text>
+                                            <Text style={[styles.recommendationValue, { color: '#ef4444' }]}>{pairAiInsight.recommendation.stopLoss?.toFixed?.(4) || pairAiInsight.recommendation.stopLoss}</Text>
+                                        </View>
+                                    )}
+                                    {pairAiInsight.recommendation.takeProfit != null && (
+                                        <View style={styles.recommendationRow}>
+                                            <Text style={styles.recommendationLabel}>Take Profit</Text>
+                                            <Text style={[styles.recommendationValue, { color: '#22c55e' }]}>{pairAiInsight.recommendation.takeProfit?.toFixed?.(4) || pairAiInsight.recommendation.takeProfit}</Text>
+                                        </View>
+                                    )}
+                                    <View style={styles.recommendationDivider} />
+                                    {pairAiInsight.recommendation.riskReward != null && (
+                                        <View style={styles.recommendationRow}>
+                                            <Text style={styles.recommendationLabel}>Risk/Reward Ratio</Text>
+                                            <Text style={styles.recommendationValue}>1:{pairAiInsight.recommendation.riskReward}</Text>
+                                        </View>
+                                    )}
+                                    {pairAiInsight.recommendation.confidence && (
+                                        <View style={styles.recommendationRow}>
+                                            <Text style={styles.recommendationLabel}>Confidence</Text>
+                                            <View style={[styles.confidenceBadge, {
+                                                backgroundColor: pairAiInsight.recommendation.confidence === 'High' ? '#22c55e20' :
+                                                    pairAiInsight.recommendation.confidence === 'Medium' ? '#f59e0b20' : '#6b728020'
+                                            }]}>
+                                                <Text style={[styles.confidenceBadgeText, {
+                                                    color: pairAiInsight.recommendation.confidence === 'High' ? '#22c55e' :
+                                                        pairAiInsight.recommendation.confidence === 'Medium' ? '#f59e0b' : '#6b7280'
+                                                }]}>
+                                                    {pairAiInsight.recommendation.confidence}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+                        </View>
+                    )}
+
                     {/* Pattern Recognition */}
-                    {item.pattern && item.pattern.pattern !== 'No Clear Pattern' && item.pattern.pattern !== 'Analyzing' && (
+                    {item.pattern?.pattern && !['No Clear Pattern', 'Analyzing'].includes(item.pattern.pattern) && (
                         <View style={styles.detailCard}>
                             <View style={styles.detailHeader}>
                                 <Feather name="target" size={20} color="#60a5fa" />
                                 <Text style={styles.detailTitle}>Pattern Recognition</Text>
                             </View>
                             <Text style={styles.patternName}>{item.pattern.pattern}</Text>
-                            <View style={styles.confidenceBar}>
-                                <View style={[styles.confidenceFill, { width: `${item.pattern.confidence}%` }]} />
-                                <Text style={styles.confidenceText}>{item.pattern.confidence}% confidence</Text>
-                            </View>
+                            {item.pattern.confidence != null && (
+                                <View style={styles.confidenceBar}>
+                                    <View style={[styles.confidenceFill, { width: `${item.pattern.confidence}%` }]} />
+                                    <Text style={styles.confidenceText}>{item.pattern.confidence}% confidence</Text>
+                                </View>
+                            )}
                         </View>
                     )}
 
                     {/* AI Insights */}
-                    {(item.aiTrend || item.aiRsi || item.aiSupport) && (
+                    {globalAiInsights?.executiveSummary && (
                         <View style={styles.detailCard}>
                             <View style={styles.detailHeader}>
                                 <Feather name="cpu" size={20} color="#a855f7" />
-                                <Text style={styles.detailTitle}>AI Insights</Text>
+                                <Text style={styles.detailTitle}>AI Market Insights</Text>
                             </View>
-                            {item.aiTrend && (
-                                <View style={styles.aiRow}>
-                                    <Text style={styles.aiLabel}>AI Trend Prediction:</Text>
-                                    <Text style={[styles.aiValue, { color: getSignalColor(item.aiTrend) }]}>{item.aiTrend}</Text>
-                                </View>
-                            )}
-                            {item.aiRsi && (
-                                <View style={styles.aiRow}>
-                                    <Text style={styles.aiLabel}>AI RSI Signal:</Text>
-                                    <Text style={[styles.aiValue, { color: getSignalColor(item.aiRsi) }]}>{item.aiRsi}</Text>
-                                </View>
-                            )}
-                            {item.aiSupport && (
-                                <View style={styles.aiRow}>
-                                    <Text style={styles.aiLabel}>AI Support Level:</Text>
-                                    <Text style={styles.aiValue}>{item.aiSupport}</Text>
-                                </View>
+                            <Text style={styles.aiSummary}>{globalAiInsights.executiveSummary}</Text>
+                            {globalAiInsights.riskAssessment && (
+                                <>
+                                    <View style={styles.detailDivider} />
+                                    <Text style={styles.aiSectionLabel}>Risk Assessment</Text>
+                                    {globalAiInsights.riskAssessment.keyRisks?.map((risk, i) => (
+                                        <Text key={i} style={styles.aiBullet}>• {risk}</Text>
+                                    ))}
+                                    {globalAiInsights.riskAssessment.suggestedPositionSize && (
+                                        <View style={styles.aiRow}>
+                                            <Text style={styles.aiLabel}>Position Size:</Text>
+                                            <Text style={styles.aiValue}>{globalAiInsights.riskAssessment.suggestedPositionSize}</Text>
+                                        </View>
+                                    )}
+                                </>
                             )}
                         </View>
                     )}
 
-                    {/* Trade Recommendation */}
-                    {item.recommendation && item.recommendation.action !== 'HOLD' && (
-                        <View style={[styles.recommendationCard, {
-                            backgroundColor: item.recommendation.action === 'BUY' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
-                            borderLeftColor: item.recommendation.action === 'BUY' ? '#22c55e' : '#ef4444',
-                        }]}>
-                            <View style={styles.recommendationHeader}>
-                                <Text style={styles.recommendationTitle}>Trade Recommendation</Text>
-                                <View style={[styles.recommendationActionBadge, { backgroundColor: item.recommendation.action === 'BUY' ? '#22c55e' : '#ef4444' }]}>
-                                    <Text style={styles.recommendationActionText}>{item.recommendation.action}</Text>
-                                </View>
-                            </View>
-                            {item.recommendation.entry && (
-                                <View style={styles.recommendationDetails}>
-                                    <View style={styles.recommendationRow}>
-                                        <Text style={styles.recommendationLabel}>Entry Price</Text>
-                                        <Text style={styles.recommendationValue}>{item.recommendation.entry.toFixed(4)}</Text>
-                                    </View>
-                                    <View style={styles.recommendationRow}>
-                                        <Text style={styles.recommendationLabel}>Stop Loss</Text>
-                                        <Text style={[styles.recommendationValue, { color: '#ef4444' }]}>{item.recommendation.stopLoss?.toFixed(4)}</Text>
-                                    </View>
-                                    <View style={styles.recommendationRow}>
-                                        <Text style={styles.recommendationLabel}>Take Profit</Text>
-                                        <Text style={[styles.recommendationValue, { color: '#22c55e' }]}>{item.recommendation.takeProfit?.toFixed(4)}</Text>
-                                    </View>
-                                    <View style={styles.recommendationDivider} />
-                                    <View style={styles.recommendationRow}>
-                                        <Text style={styles.recommendationLabel}>Risk/Reward Ratio</Text>
-                                        <Text style={styles.recommendationValue}>1:{item.recommendation.riskReward}</Text>
-                                    </View>
-                                    <View style={styles.recommendationRow}>
-                                        <Text style={styles.recommendationLabel}>Confidence</Text>
-                                        <View style={[styles.confidenceBadge, {
-                                            backgroundColor: item.recommendation.confidence === 'High' ? '#22c55e20' :
-                                                item.recommendation.confidence === 'Medium' ? '#f59e0b20' : '#6b728020'
-                                        }]}>
-                                            <Text style={[styles.confidenceBadgeText, {
-                                                color: item.recommendation.confidence === 'High' ? '#22c55e' :
-                                                    item.recommendation.confidence === 'Medium' ? '#f59e0b' : '#6b7280'
-                                            }]}>
-                                                {item.recommendation.confidence}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </View>
-                            )}
-                        </View>
-                    )}
                 </ScrollView>
             </View>
         </View>
@@ -603,6 +617,30 @@ const styles = StyleSheet.create({
         marginTop: 6
     },
 
+    aiSummary: {
+        color: '#d1d5db',
+        fontSize: 13,
+        lineHeight: 20,
+        marginBottom: 12
+    },
+    aiSectionLabel: {
+        color: '#60a5fa',
+        fontSize: 13,
+        fontWeight: '600',
+        marginBottom: 6,
+        marginTop: 4
+    },
+    aiBullet: {
+        color: '#9ca3af',
+        fontSize: 12,
+        lineHeight: 20,
+        paddingLeft: 4
+    },
+    detailDivider: {
+        height: 1,
+        backgroundColor: '#2d3748',
+        marginVertical: 10
+    },
     aiRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -622,7 +660,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 16,
         borderLeftWidth: 4,
-        marginTop: 8
+        marginBottom: 12
     },
     recommendationHeader: {
         flexDirection: 'row',

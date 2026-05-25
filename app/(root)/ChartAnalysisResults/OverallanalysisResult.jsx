@@ -2,7 +2,7 @@
 
 import HomeHeader from '@/components/HomeHeader';
 import { Feather } from '@expo/vector-icons';
-import { SectionList, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { SectionList, StyleSheet, Text, View, TouchableOpacity, RefreshControl } from 'react-native';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAnalysis } from '@/context/ChartAnalysisContext';
 import FilterBar from '@/components/chartAnalysisComponents/FilterBar';
@@ -24,12 +24,15 @@ const OverallanalysisResult = () => {
         filters,
         updateFilters,
         deleteAnalysis,
-        deleteMultipleAnalyses
+        deleteMultipleAnalyses,
+        lastError,
+        isAnalyzing
     } = useAnalysis();
 
     const [expandedAnalysis, setExpandedAnalysis] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     const [selectedAnalyses, setSelectedAnalyses] = useState(new Set());
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -165,6 +168,15 @@ const OverallanalysisResult = () => {
         setIsLoadingMore(false);
     }, [hasMore, isLoadingMore]);
 
+    // Pull-to-refresh handler
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await fetchAnalysisHistory();
+        setCurrentPage(1);
+        setExpandedAnalysis(null);
+        setRefreshing(false);
+    }, [fetchAnalysisHistory]);
+
     // Reset pagination when filters change
     useEffect(() => {
         setCurrentPage(1);
@@ -213,6 +225,14 @@ const OverallanalysisResult = () => {
                 title="Analysis Dashboard"
                 subtitle="AI-powered technical analysis & trading insights"
             />
+
+            {/* Error banner */}
+            {lastError && !isAnalyzing && (
+                <View style={styles.errorBanner}>
+                    <Feather name="alert-triangle" size={14} color="#ef4444" />
+                    <Text style={styles.errorBannerText}>{lastError}</Text>
+                </View>
+            )}
 
             {isLoadingHistory && analysisHistory.length === 0 && <LoadingState />}
 
@@ -286,6 +306,15 @@ const OverallanalysisResult = () => {
                         onEndReached={loadMore}
                         onEndReachedThreshold={0.3}
                         stickySectionHeadersEnabled={false}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={onRefresh}
+                                tintColor="#3b82f6"
+                                colors={['#3b82f6']}
+                                progressBackgroundColor="#1e2836"
+                            />
+                        }
                         ListFooterComponent={
                             <ListFooter
                                 isLoadingMore={isLoadingMore}
@@ -317,6 +346,21 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#000',
         paddingHorizontal: 10,
+    },
+    errorBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        marginBottom: 10,
+        gap: 8,
+    },
+    errorBannerText: {
+        color: '#ef4444',
+        fontSize: 12,
+        flex: 1,
     },
     resultsCount: {
         paddingHorizontal: 4,

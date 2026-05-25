@@ -33,6 +33,32 @@ const SelectTradingPairs = () => {
 
     const analysisStyles = ['Price Action', 'Smart Money Concept (SMC)', 'ICT', 'Order Flow', 'Supply & Demand', 'Classic TA', 'CRT'];
 
+    const getTimeframeOptions = (analysisType) => {
+        switch (analysisType) {
+            case 'Scalping':
+                return [
+                    { label: '1 Minute', value: '1m' },
+                    { label: '3 Minutes', value: '3m' },
+                    { label: '5 Minutes', value: '5m' },
+                    { label: '15 Minutes', value: '15m' }
+                ];
+            case 'Intraday':
+                return [
+                    { label: '15 Minutes', value: '15m' },
+                    { label: '30 Minutes', value: '30m' },
+                    { label: '1 Hour', value: '1h' },
+                    { label: '4 Hours', value: '4h' }
+                ];
+            case 'Swing':
+            default:
+                return [
+                    { label: '1 Hour', value: '1h' },
+                    { label: '4 Hours', value: '4h' },
+                    { label: '1 Day', value: '1d' }
+                ];
+        }
+    };
+
     const majorPairs = ['AUDUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'USDCAD', 'NZDUSD'];
     const minorPairs = ['EURGBP', 'EURJPY', 'EURCHF', 'EURAUD', 'EURCAD', 'EURNZD', 'EURSEK', 'EURNOK', 'GBPJPY', 'GBPCHF', 'GBPAUD', 'GBPCAD', 'GBPNZD', 'AUDJPY', 'AUDCHF', 'AUDCAD', 'AUDNZD', 'CADJPY', 'CADCHF', 'CHFJPY'];
 
@@ -87,6 +113,14 @@ const SelectTradingPairs = () => {
             setAllInstrumentsList(getHardcodedForexPairs());
         }
     }, [activeTab, fetchInstruments, getHardcodedForexPairs]);
+
+    useEffect(() => {
+        const validTimeframes = getTimeframeOptions(analysisType).map(opt => opt.value);
+        if (!validTimeframes.includes(timeframe)) {
+            // If current timeframe not valid for new analysis type, set to first valid option
+            setTimeframe(validTimeframes[0]);
+        }
+    }, [analysisType]);
 
     // Get displayed instruments based on search or filter
     const getDisplayedInstruments = useCallback(() => {
@@ -143,6 +177,7 @@ const SelectTradingPairs = () => {
             Alert.alert('Error', 'Please select at least one trading pair');
             return;
         }
+
         console.log('Sending analysisStyle:', analysisStyle);
 
         const result = await requestAnalysis({
@@ -156,11 +191,8 @@ const SelectTradingPairs = () => {
         console.log('result', result);
 
         if (result && result.success) {
+            // Only clear selected pairs - keep everything else as is
             setSelectedPairs([]);
-            setActiveTab('Forex');
-            setAnalysisType('Swing');
-            setTimeframe('1H');
-            setAnalysisStyle('Price Action');
             setSearchQuery('');
             setForexSubCategory('All');
             setVisibleCount(20);
@@ -172,7 +204,6 @@ const SelectTradingPairs = () => {
                 params: { analysisData: JSON.stringify(result.analysisData) }
             });
         } else {
-            // Handle failure
             Alert.alert('Analysis Failed', result?.error || 'Unknown error occurred');
         }
     };
@@ -458,16 +489,22 @@ const SelectTradingPairs = () => {
                                             style={styles.picker}
                                             dropdownIconColor="#A0AEC0"
                                         >
-                                            <Picker.Item label="1 Minute" value="1m" />
-                                            <Picker.Item label="3 Minutes" value="3m" />
-                                            <Picker.Item label="5 Minutes" value="5m" />
-                                            <Picker.Item label="15 Minutes" value="15m" />
-                                            <Picker.Item label="30 Minutes" value="30m" />
-                                            <Picker.Item label="1 Hour" value="1h" />
-                                            <Picker.Item label="4 Hours" value="4h" />
-                                            <Picker.Item label="1 Day" value="1d" />
+                                            {getTimeframeOptions(analysisType).map((option) => (
+                                                <Picker.Item
+                                                    key={option.value}
+                                                    label={option.label}
+                                                    value={option.value}
+                                                />
+                                            ))}
                                         </Picker>
                                     </View>
+                                </View>
+                                <View style={styles.analysisTypeHint}>
+                                    <Text style={styles.hintText}>
+                                        {analysisType === 'Scalping' && '⚡ Best for: 1m-15m timeframes, quick entries/exits'}
+                                        {analysisType === 'Intraday' && '📊 Best for: 15m-4h timeframes, day trading'}
+                                        {analysisType === 'Swing' && '📈 Best for: 1h-1d timeframes, multi-day positions'}
+                                    </Text>
                                 </View>
 
                                 <TouchableOpacity
@@ -796,5 +833,17 @@ const styles = StyleSheet.create({
         color: '#3b82f6',
         marginLeft: 8,
         fontSize: 12,
+    },
+    analysisTypeHint: {
+        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+        borderRadius: 8,
+        padding: 8,
+        marginBottom: 15,
+        marginTop: -5,
+    },
+    hintText: {
+        color: '#60a5fa',
+        fontSize: 11,
+        textAlign: 'center',
     },
 });

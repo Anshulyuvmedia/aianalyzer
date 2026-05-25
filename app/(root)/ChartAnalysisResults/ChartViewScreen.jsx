@@ -9,7 +9,19 @@ import { TradingViewChart } from '@/components/chartAnalysisComponents/TradingVi
 export default function ChartViewScreen() {
     const params = useLocalSearchParams();
     const pair = params.pair ? JSON.parse(params.pair) : null;
-    const analysisData = params.analysisData ? JSON.parse(params.analysisData) : null;
+    const rawAnalysisData = params.analysisData ? JSON.parse(params.analysisData) : null;
+
+    // Normalize: handle both API response (flat) and DB document (nested) structures
+    const analysisData = useMemo(() => {
+        if (!rawAnalysisData) return null;
+        // DB document structure: { _id, userId, analysisData: { request, overallAnalysis, ... } }
+        // API response structure: { success, request, overallAnalysis, ... }
+        if (rawAnalysisData.analysisData && typeof rawAnalysisData.analysisData === 'object') {
+            return rawAnalysisData.analysisData;
+        }
+        // Raw API response: wrap it so downstream code always accesses via .analysisData
+        return rawAnalysisData;
+    }, [rawAnalysisData]);
 
     useEffect(() => {
         const lockToLandscape = async () => {
@@ -35,29 +47,6 @@ export default function ChartViewScreen() {
         };
     }, []);
 
-    useEffect(() => {
-        if (analysisData) {
-            console.log('🔍 Analysis Data Structure:', {
-                hasOverallAnalysis: !!analysisData.analysisData?.overallAnalysis,
-                hasChartAnnotations: !!analysisData.analysisData?.chartAnnotations,
-                analysisStyle: analysisData.analysisData?.request?.analysisStyle,
-                overallAnalysisCount: analysisData.analysisData?.overallAnalysis?.length,
-                chartAnnotationsCount: analysisData.analysisData?.chartAnnotations?.length,
-            });
-
-            // Log first pair's annotations
-            const firstAnnotation = analysisData.analysisData?.chartAnnotations?.[0];
-            if (firstAnnotation) {
-                console.log('📊 First Annotation:', {
-                    pair: firstAnnotation.pair,
-                    orderBlocks: firstAnnotation.orderBlocks?.length,
-                    fairValueGaps: firstAnnotation.fairValueGaps?.length,
-                    patterns: firstAnnotation.patterns?.length,
-                });
-            }
-        }
-    }, [analysisData]);
-
     const handleBack = async () => {
         if (Platform.OS !== 'web') {
             await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
@@ -69,8 +58,8 @@ export default function ChartViewScreen() {
     const chartData = useMemo(() => {
         if (!pair || !analysisData) return null;
 
-        const overallAnalysis = analysisData.analysisData?.overallAnalysis || [];
-        const chartAnnotations = analysisData.analysisData?.chartAnnotations || [];
+        const overallAnalysis = analysisData.overallAnalysis || [];
+        const chartAnnotations = analysisData.chartAnnotations || [];
 
         // Find pair-specific analysis
         const pairAnalysis = overallAnalysis.find(a => a.pair === pair.pair);
@@ -83,39 +72,134 @@ export default function ChartViewScreen() {
             annotationKeys: pairAnnotations ? Object.keys(pairAnnotations) : []
         });
 
-        // Priority: pairAnnotations first, then pairAnalysis
+        // Log SMC-specific data if available
+        if (pairAnnotations) {
+            console.log('📊 SMC Data from Annotations:', {
+                orderBlocks: pairAnnotations.orderBlocks?.length || 0,
+                fairValueGaps: pairAnnotations.fairValueGaps?.length || 0,
+                liquidityLevels: pairAnnotations.liquidityLevels?.length || 0,
+                breakOfStructure: pairAnnotations.breakOfStructure?.length || 0,
+                changeOfCharacter: pairAnnotations.changeOfCharacter?.length || 0,
+            });
+        }
+
+        // For SMC, prioritize annotation data which contains all the SMC-specific fields
+        const isSMC = analysisData?.request?.analysisStyle === 'Smart Money Concept (SMC)';
+
+        if (isSMC && pairAnnotations) {
+            return {
+                pair: pair.pair,
+                timeframe: analysisData?.request?.timeframe || '1h',
+                analysisStyle: 'Smart Money Concept (SMC)',
+                lastPrice: pairAnalysis?.lastPrice || pair.lastPrice,
+                candles: pairAnalysis?.candles || [],
+                trendAnalysis: pairAnalysis?.trendAnalysis || { direction: 'Neutral', strength: 'Low' },
+
+                // SMC-specific fields from annotations
+                orderBlocks: pairAnnotations.orderBlocks || [],
+                fairValueGaps: pairAnnotations.fairValueGaps || [],
+                liquidityLevels: pairAnnotations.liquidityLevels || [],
+                breakOfStructure: pairAnnotations.breakOfStructure || [],
+                changeOfCharacter: pairAnnotations.changeOfCharacter || [],
+                swingPoints: pairAnnotations.swingPoints || [],
+                premiumDiscountZones: pairAnnotations.premiumDiscountZones || pairAnalysis?.premiumDiscountZones || [],
+                equalHighs: pairAnnotations.equalHighs || pairAnalysis?.equalHighs || [],
+                equalLows: pairAnnotations.equalLows || pairAnalysis?.equalLows || [],
+                marketStructure: pairAnalysis?.marketStructure || 'Unknown',
+
+                // Also include patterns/keyLevels if they exist
+                patterns: pairAnnotations.patterns || pairAnalysis?.patterns || [],
+                keyLevels: pairAnnotations.keyLevels || pairAnalysis?.keyLevels || [],
+            };
+        }
+
+        // Build comprehensive chart data covering all 7 analysis styles
+        const a = pairAnnotations;
+        const p = pairAnalysis;
+
+        // Utility: get value from annotations first, fallback to analysis, then default
+        const f = (field, def = []) => a?.[field] ?? p?.[field] ?? def;
+        const fv = (field, def) => a?.[field] !== undefined ? a[field] : (p?.[field] !== undefined ? p[field] : def);
+
         return {
             pair: pair.pair,
-            timeframe: analysisData.analysisData?.request?.timeframe || '1h',
-            analysisStyle: analysisData.analysisData?.request?.analysisStyle || 'Price Action',
-            lastPrice: pairAnalysis?.lastPrice || pair.lastPrice,
-            candles: pairAnalysis?.candles || [],
+            timeframe: analysisData?.request?.timeframe || '1h',
+            analysisStyle: analysisData?.request?.analysisStyle || 'Price Action',
+            lastPrice: p?.lastPrice || pair.lastPrice,
+            candles: p?.candles || [],
 
-            // CRITICAL: Use annotations data which is properly formatted
-            patterns: pairAnnotations?.patterns || pairAnalysis?.patterns || [],
-            keyLevels: pairAnnotations?.keyLevels || pairAnalysis?.keyLevels || [],
-            orderBlocks: pairAnnotations?.orderBlocks || pairAnalysis?.orderBlocks || [],
-            fairValueGaps: pairAnnotations?.fairValueGaps || pairAnalysis?.fairValueGaps || [],
-            supplyZones: pairAnnotations?.supplyZones || pairAnalysis?.supplyZones || [],
-            demandZones: pairAnnotations?.demandZones || pairAnalysis?.demandZones || [],
-            liquidityLevels: pairAnnotations?.liquidityLevels || pairAnalysis?.liquidityLevels || [],
-            liquidityPools: pairAnnotations?.liquidityPools || pairAnalysis?.liquidityPools || [],
-            pdArrays: pairAnnotations?.pdArrays || pairAnalysis?.pdArrays || [],
-            sessionRanges: pairAnnotations?.sessionRanges || pairAnalysis?.sessionRanges || [],
-            breakOfStructure: pairAnnotations?.breakOfStructure || pairAnalysis?.breakOfStructure || [],
-            changeOfCharacter: pairAnnotations?.changeOfCharacter || pairAnalysis?.changeOfCharacter || [],
-            swingPoints: pairAnnotations?.swingPoints || pairAnalysis?.swingPoints || [],
-            vwap: pairAnnotations?.vwap ?? pairAnalysis?.vwap,
-            ote: pairAnnotations?.ote ?? pairAnalysis?.ote,
-            indicators: pairAnnotations?.indicators || pairAnalysis?.indicators || {},
-            volumeProfile: pairAnnotations?.volumeProfile ?? pairAnalysis?.volumeProfile,
-            delta: pairAnnotations?.delta ?? pairAnalysis?.delta,
+            // === Common across all styles ===
+            trendAnalysis: p?.trendAnalysis || { direction: 'Neutral', strength: 'Low' },
+            patterns: f('patterns'),
+            keyLevels: f('keyLevels'),
+            swingPoints: f('swingPoints'),
+            breakouts: f('breakouts'),
+            marketStructure: p?.marketStructure || 'Unknown',
+
+            // === Price Action / Classic TA ===
+            trendlines: f('trendlines'),
+            supportResistance: f('supportResistance', {}),
+
+            // === SMC ===
+            orderBlocks: f('orderBlocks'),
+            fairValueGaps: f('fairValueGaps'),
+            liquidityLevels: f('liquidityLevels'),
+            breakOfStructure: f('breakOfStructure'),
+            changeOfCharacter: f('changeOfCharacter'),
+            equalHighs: f('equalHighs'),
+            equalLows: f('equalLows'),
+
+            // === ICT ===
+            pdArrays: f('pdArrays'),
+            sessionRanges: f('sessionRanges'),
+            liquidityPools: f('liquidityPools'),
+            killzones: f('killzones'),
+            breakerBlocks: f('breakerBlocks'),
+            marketStructureShifts: f('marketStructureShifts'),
+            activeKillzones: f('activeKillzones'),
+            currentKillzone: p?.currentKillzone || null,
+
+            // === Order Flow ===
+            volumeProfile: f('volumeProfile'),
+            delta: f('delta'),
+            deltaProfile: f('deltaProfile'),
+            fibonacciProjections: f('fibonacciProjections'),
+            deltaHistory: f('deltaHistory'),
+            cumulativeDelta: fv('cumulativeDelta', 0),
+            netDelta: fv('netDelta', 0),
+            deltaPercent: fv('deltaPercent', 0),
+            volumeConfirmation: fv('volumeConfirmation', null),
+            bidAskImbalance: f('bidAskImbalance'),
+            absorption: f('absorption'),
+            imbalances: f('imbalances'),
+            pocPrice: p?.pocPrice || null,
+            pocVolume: p?.pocVolume || null,
+
+            // === Supply & Demand ===
+            supplyZones: f('supplyZones'),
+            demandZones: f('demandZones'),
+            freshZones: f('freshZones'),
+            nearestSupply: a?.nearestSupply ?? p?.nearestSupply ?? null,
+            nearestDemand: a?.nearestDemand ?? p?.nearestDemand ?? null,
+            zoneRetests: f('zoneRetests'),
+            zoneBreaks: f('zoneBreaks'),
+            sdSummary: f('summary', {}),
+
+            // === CRT ===
+            htfCandles: f('htfCandles'),
+            po3Patterns: f('po3Patterns'),
+            runningDelta: fv('runningDelta', 0),
+
+            // === Indicators / Misc ===
+            indicators: f('indicators', {}),
+            vwap: fv('vwap', null),
+            ote: fv('ote', null),
         };
     }, [pair, analysisData]);
 
     useEffect(() => {
         if (chartData) {
-            const requiredForRendering = ['candles', 'patterns', 'keyLevels'];
+            const requiredForRendering = ['candles'];
             const missing = requiredForRendering.filter(f => !chartData[f]?.length);
 
             if (missing.length) {
@@ -214,7 +298,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingTop: Platform.OS === 'ios' ? 12 : 8,
+        paddingTop: Platform.OS === 'ios' ? 50 : 8,
         paddingBottom: 8,
         backgroundColor: 'rgba(0,0,0,0.8)',
         borderBottomWidth: 1,

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -159,7 +159,7 @@ const UserStrategies = () => {
                 >
                     <View style={styles.cardHeader}>
                         <View style={styles.symbolContainer}>
-                            <Feather name={getMarketIcon(strategy.market)} size={20} color="#60a5fa" />
+                            <FontAwesome name={getMarketIcon(strategy.market)} size={20} color="#60a5fa" />
                             <Text style={styles.symbol}>{strategy.symbol}</Text>
                         </View>
                         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(strategy.status) + '20' }]}>

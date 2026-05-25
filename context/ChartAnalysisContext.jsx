@@ -1,4 +1,4 @@
-// contexts/ChartAnalysisContext.jsx - Simplified version
+// contexts/ChartAnalysisContext.jsx
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -6,6 +6,13 @@ import { Alert } from 'react-native';
 import { API_BASE_URL } from '@/config/api';
 
 const AnalysisContext = createContext(undefined);
+
+const getAuthHeaders = async () => {
+    const token = await AsyncStorage.getItem('userToken');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+};
 
 export function AnalysisProvider({ children }) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -39,7 +46,7 @@ export function AnalysisProvider({ children }) {
             setCurrentPage(prev => prev + 1);
         }
     }, [hasMoreAnalyses]);
-    // Fetch analysis history
+
     const fetchAnalysisHistory = useCallback(async () => {
         try {
             setIsLoadingHistory(true);
@@ -49,11 +56,11 @@ export function AnalysisProvider({ children }) {
             }
 
             const user = JSON.parse(saved);
-            const userId = user._id;
             const url = `${API_BASE_URL}/api/appdata/get-chart-analysis`;
 
             const response = await axios.get(url, {
-                params: { userid: userId }
+                headers: await getAuthHeaders(),
+                params: { userid: user._id }
             });
 
             const history = response.data?.analysisData || [];
@@ -68,15 +75,7 @@ export function AnalysisProvider({ children }) {
         }
     }, []);
 
-    // Request new analysis
     const requestAnalysis = useCallback(async (params) => {
-
-        console.log('📤 REQUEST ANALYSIS:', {
-            style: params.analysisStyle,
-            pairs: params.selectedPairs?.length,
-            timeframe: params.timeframe
-        });
-
         setIsAnalyzing(true);
         setLastError(null);
 
@@ -93,7 +92,7 @@ export function AnalysisProvider({ children }) {
 
             const response = await axios.post(url, requestBody, {
                 timeout: 130000,
-                headers: { 'Content-Type': 'application/json' }
+                headers: await getAuthHeaders()
             });
 
             const data = response.data;
