@@ -88,7 +88,7 @@ const APIConfiguration = ({ apiType }) => {
         // Optional: navigation.goBack();  // if you want to return after success
       } else {
         const reason = data.message || data.error || "Authentication failed";
-        Alert.alert("Connection Failed", reason);
+        // Alert.alert("Connection Failed", reason);
         setStatusMessage(reason);
       }
     } catch (error) {

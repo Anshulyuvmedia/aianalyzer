@@ -1,5 +1,5 @@
 // src/context/AlgoTradingContext.jsx
-import { createContext, useState, useEffect, useCallback, useContext } from 'react';
+import { createContext, useState, useEffect, useCallback, useContext, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { connectSocket } from "../lib/socketService";
 import { useAuth } from "./AuthContext";
@@ -20,6 +20,7 @@ export const AlgoTradingProvider = ({ children }) => {
     const [lastTradeTime, setLastTradeTime] = useState(null);
     const [engineStatus, setEngineStatus] = useState({});
     const [engineLogs, setEngineLogs] = useState([]);
+    const refreshThrottle = useRef(0);
 
 
     useEffect(() => {
@@ -58,6 +59,12 @@ export const AlgoTradingProvider = ({ children }) => {
                         };
                     });
                 }
+
+                const now = Date.now();
+                if (now - refreshThrottle.current > 5000) {
+                    refreshThrottle.current = now;
+                    fetchAlgoTradingData();
+                }
             };
             handleBatch = (batch) => {
                 const pnlUpdate = batch.find(t => t.type === "PNL");
@@ -77,20 +84,15 @@ export const AlgoTradingProvider = ({ children }) => {
             socketInstance.on("tradeBatch", handleBatch);
             socketInstance.on("engineEvent", (data) => {
                 console.log("⚙️ ENGINE EVENT:", data);
-                if (data.event === "engine") {
-                    if (data.type === "STATUS") {
-                        setEngineStatus(data);
-                    }
-                    if (data.type === "LOG") {
-                        setEngineLogs(prev => [data.message, ...prev]);
-                    }
-                    if (data.type === "ERROR") {
-                        setEngineStatus({
-                            status: "error",
-                            message: data.message
-                        });
-                    }
-                    return;
+                if (data.type === "STATUS") {
+                    setEngineStatus(data);
+                } else if (data.type === "LOG") {
+                    setEngineLogs(prev => [data.message, ...prev]);
+                } else if (data.type === "ERROR") {
+                    setEngineStatus({
+                        status: "error",
+                        message: data.message
+                    });
                 }
             });
         };
@@ -118,8 +120,9 @@ export const AlgoTradingProvider = ({ children }) => {
             if (!savedUser) return;
 
             const { _id } = JSON.parse(savedUser);
-            const response = await api.get(`/api/appdata/algotrading-data?userid=${_id}`);
+            const response = await api.get(`/api/appdata/algotrading-data?userid=${_id}&_t=${Date.now()}`);
 
+            console.log('AlgoTrading API response:', JSON.stringify(response.data?.summary));
             setAlgotradingData(response.data);
             await AsyncStorage.setItem('algotradingCache', JSON.stringify(response.data));
         } catch (error) {
@@ -131,7 +134,7 @@ export const AlgoTradingProvider = ({ children }) => {
         }
     }, []);
 
-    const updateStategyStatus = useCallback(async (strategy, newStatus) => {
+    const updateStategyStatus = useCallback(async (strategy, newStatus, config = {}) => {
         try {
             if (!strategy) return;
             const metaApiAccountId = brokerConnection?.metaApiAccountId;
@@ -146,21 +149,27 @@ export const AlgoTradingProvider = ({ children }) => {
                 return;
             }
             if (newStatus === "Active") {
+                setEngineStatus({
+                    status: "starting",
+                    message: "Starting strategy..."
+                });
                 const res = await api.post(
                     `/api/appdata/strategies/${strategy._id}/activate`,
                     {
                         metaApiAccountId,
                         symbol: strategy.symbols[0],
                         timeframe: strategy.timeframes[0],
-                        riskPerTradePercent: 1
+                        riskPerTradePercent: config.riskPerTradePercent ?? 1,
+                        lotSize: config.lotSize,
+                        customParams: { lotSize: config.lotSize, riskPerTradePercent: config.riskPerTradePercent }
                     }
                 );
                 console.log("✅ Activation Response:", res.data);
-                setEngineStatus({
-                    status: "starting",
-                    message: "Starting strategy..."
-                });
             } else {
+                setEngineStatus({
+                    status: "pausing",
+                    message: "Pausing strategy..."
+                });
                 const res = await api.post(
                     `/api/appdata/strategies/${strategy._id}/deactivate`,
                     {
@@ -170,6 +179,7 @@ export const AlgoTradingProvider = ({ children }) => {
                 );
                 console.log("⛔ Deactivation Response:", res.data);
             }
+            fetchAlgoTradingData();
         } catch (err) {
             console.error("❌ Strategy Update Failed:", err.response?.data || err.message);
         }

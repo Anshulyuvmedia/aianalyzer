@@ -97,47 +97,43 @@ export const CopyStrategyProvider = ({ children }) => {
     }, []);
 
     const toggleFollow = useCallback(async (strategyId, shouldFollow) => {
+        const prevState = {};
+
+        setStrategies(prev => {
+            const updated = prev.map(s =>
+                s._id === strategyId
+                    ? { ...s, isFollowing: shouldFollow, followerCount: s.followerCount + (shouldFollow ? 1 : -1) }
+                    : s
+            );
+            prev.forEach(s => { if (s._id === strategyId) prevState[s._id] = s; });
+            AsyncStorage.setItem('copyStrategiesCache', JSON.stringify(updated)).catch(() => {});
+            return updated;
+        });
+
         try {
-            setLoading(true);
-            setError(null);
-
             const action = shouldFollow ? 'follow' : 'unfollow';
-
-            // Fix 1: correct endpoint path (adjust if your baseURL includes /api)
             const res = await api.post(`/api/appdata/strategies/${strategyId}/follow`, { action });
-            // console.log("✅ Activation Response:", res.data);
-
-            // Fix 2: Safely extract values (both response shapes have these fields)
             const { followerCount, isFollowing } = res.data;
 
             if (followerCount === undefined || isFollowing === undefined) {
                 throw new Error('Invalid response from server');
             }
 
-            // Fix 3: Update state correctly
-            setStrategies(prevStrategies => {
-                const updated = prevStrategies.map(s =>
-                    s._id === strategyId
-                        ? {
-                            ...s,
-                            followerCount,
-                            isFollowing,
-                        }
-                        : s
-                );
-
-                // Fix 4: Save the freshly updated array to cache
-                AsyncStorage.setItem('copyStrategiesCache', JSON.stringify(updated))
-                    .catch(err => console.error('Cache save failed:', err));
-
-                return updated;
-            });
-
+            setStrategies(prev =>
+                prev.map(s =>
+                    s._id === strategyId ? { ...s, followerCount, isFollowing } : s
+                )
+            );
         } catch (err) {
             console.error('Follow toggle failed:', err);
             setError('Failed to update follow status');
-        } finally {
-            setLoading(false);
+            setStrategies(prev =>
+                prev.map(s =>
+                    s._id === strategyId && prevState[s._id]
+                        ? { ...s, ...prevState[s._id] }
+                        : s
+                )
+            );
         }
     }, []);
 

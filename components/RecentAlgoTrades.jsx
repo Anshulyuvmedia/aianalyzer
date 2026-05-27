@@ -7,6 +7,7 @@ import FlashTradeItem from './FlashTradeItem';
 
 const RecentAlgoTrades = ({ data, pnl }) => {
     const trades = Array.isArray(data) ? data : [];
+    const currentPnl = pnl?.pnl ?? null;
 
     // ⏱️ Time formatter
     const getTimeAgo = (isoString) => {
@@ -112,15 +113,27 @@ const RecentAlgoTrades = ({ data, pnl }) => {
             </View>
 
             {/* Total PnL Summary */}
-            {completedTrades.length > 0 && (
+            {(completedTrades.length > 0 || currentPnl !== null) && (
                 <View style={styles.pnlSummary}>
                     <Text style={styles.pnlLabel}>Realized PnL</Text>
                     <Text style={[
                         styles.totalPnl,
                         { color: stats.totalPnl >= 0 ? '#22c55e' : '#ef4444' }
                     ]}>
-                        ₹{stats.totalPnl >= 0 ? '+' : ''}{Number(stats.totalPnl || 0).toFixed(2)}
+                        {stats.totalPnl >= 0 ? '+' : ''}{Number(stats.totalPnl || 0).toFixed(2)}
                     </Text>
+
+                    {currentPnl !== null && (
+                        <View style={styles.currentPnlRow}>
+                            <Text style={styles.pnlLabel}>Current Floating PnL</Text>
+                            <Text style={[
+                                styles.currentPnlValue,
+                                { color: currentPnl >= 0 ? '#22c55e' : '#ef4444' }
+                            ]}>
+                                {currentPnl >= 0 ? '+' : ''}{Number(currentPnl).toFixed(2)}
+                            </Text>
+                        </View>
+                    )}
 
                     <View style={styles.winRateRow}>
                         <Text style={styles.winRateLabel}>Win Rate</Text>
@@ -230,6 +243,17 @@ const styles = StyleSheet.create({
         fontSize: 26,
         fontWeight: '800',
         letterSpacing: -0.5,
+    },
+    currentPnlRow: {
+        marginTop: 8,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#334155',
+    },
+    currentPnlValue: {
+        fontSize: 20,
+        fontWeight: '700',
+        marginTop: 2,
     },
     winRateRow: {
         flexDirection: 'row',

@@ -1,20 +1,55 @@
 // components/ActiveStrategies.jsx
-import React, { useContext, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Alert, ScrollView, FlatList } from 'react-native';
+import React, { useContext, useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View, Alert, ScrollView, FlatList, ActivityIndicator, Animated } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import LinearGradient from 'react-native-linear-gradient';
 import { CopyStrategyContext } from '@/context/CopyStrategyContext';
 import { AlgoTradingContext } from '@/context/AlgoTradingContext';
 import { router } from 'expo-router';
+import { formatCurrency, formatPercent } from '@/utils/numberFormatter';
 
 const ActiveStrategies = () => {
     const { strategies, toggleFollow, refreshStrategies, updateStrategyLocalStatus } = useContext(CopyStrategyContext);
-    const { updateStategyStatus } = useContext(AlgoTradingContext);
+    const { updateStategyStatus, algotradingData } = useContext(AlgoTradingContext);
 
     const [selectedAssetClass, setSelectedAssetClass] = useState('ALL');
     const [localStatuses, setLocalStatuses] = useState({});
+    const [dataTimedOut, setDataTimedOut] = useState(false);
+    const blinkAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDataTimedOut(true), 5000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
+        if (algotradingData) setDataTimedOut(true);
+    }, [algotradingData]);
+
+    useEffect(() => {
+        const hasActive = Object.values(liveMetricsMap).some(s => s.status === 'Active');
+        if (hasActive) {
+            const loop = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(blinkAnim, { toValue: 0.2, duration: 700, useNativeDriver: true }),
+                    Animated.timing(blinkAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+                ])
+            );
+            loop.start();
+            return () => loop.stop();
+        } else {
+            blinkAnim.setValue(1);
+        }
+    }, [algotradingData]);
 
     const activeStrategies = strategies.filter(s => s.isFollowing === true);
+
+    const liveMetricsMap = {};
+    if (algotradingData?.strategies) {
+        algotradingData.strategies.forEach(s => {
+            liveMetricsMap[s._id] = s;
+        });
+    }
 
     // Define asset classes for tabs
     const assetClasses = [
@@ -33,14 +68,45 @@ const ActiveStrategies = () => {
         return strategy.assetClass === selectedAssetClass;
     });
 
-    // console.log('activeStrategies', activeStrategies);
-    // console.log('filteredStrategies', filteredStrategies);
-
     const handleToggleStatus = async (strategyId) => {
         const strategy = strategies.find(s => s._id === strategyId);
         if (!strategy) return;
 
-        const currentStatus = localStatuses[strategyId] || strategy.status || 'Paused';
+        const live = liveMetricsMap[strategyId];
+        const liveStatus = live?.status;
+        const currentStatus = localStatuses[strategyId] || liveStatus || strategy.status || 'Paused';
+        const isStarting = currentStatus !== 'Active';
+
+        if (isStarting) {
+            Alert.alert(
+                'Start Strategy',
+                `Are you sure you want to start "${strategy.name}"?\n\nConfigure your lot size and risk settings in the strategy detail page before starting.`,
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Start',
+                        style: 'destructive',
+                        onPress: () => executeToggle(strategy, strategyId, currentStatus)
+                    }
+                ]
+            );
+        } else {
+            Alert.alert(
+                'Pause Strategy',
+                `Are you sure you want to pause "${strategy.name}"?\n\nOngoing trades will remain open but no new entries will be made.`,
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Pause',
+                        style: 'destructive',
+                        onPress: () => executeToggle(strategy, strategyId, currentStatus)
+                    }
+                ]
+            );
+        }
+    };
+
+    const executeToggle = async (strategy, strategyId, currentStatus) => {
         const newStatus = currentStatus === 'Active' ? 'Paused' : 'Active';
 
         // Instant UI feedback
@@ -52,12 +118,19 @@ const ActiveStrategies = () => {
             refreshStrategies();
         } catch (error) {
             console.error('Failed to update strategy status:', error);
-            // Revert on error (optional)
+            // Revert on error
             setLocalStatuses(prev => ({ ...prev, [strategyId]: currentStatus }));
         }
     };
 
-    const handleUnfollow = (strategyId, name) => {
+    const handleUnfollow = async (strategyId, name) => {
+        const live = liveMetricsMap[strategyId];
+        if (live?.status === 'Active') {
+            const strategy = strategies.find(s => s._id === strategyId);
+            if (strategy) {
+                await updateStategyStatus(strategy, 'Paused');
+            }
+        }
         Alert.alert(
             'Unfollow Strategy',
             `Are you sure you want to unfollow "${name}"?`,
@@ -79,7 +152,8 @@ const ActiveStrategies = () => {
     };
 
     const getCurrentStatus = (strategy) => {
-        return localStatuses[strategy._id] || strategy.status || 'Paused';
+        const live = liveMetricsMap[strategy._id];
+        return localStatuses[strategy._id] || live?.status || strategy.status || 'Not Started';
     };
 
     // Helper function to get asset class specific styles
@@ -179,8 +253,14 @@ const ActiveStrategies = () => {
                     data={filteredStrategies}
                     keyExtractor={(item) => item._id}
                     renderItem={({ item: strategy }) => {
-                        const currentStatus = getCurrentStatus(strategy);
-                        const isActive = currentStatus === 'Active';
+                        const live = liveMetricsMap[strategy._id];
+                        const liveStatus = live?.status || strategy.status || 'Not Started';
+                        const isActive = liveStatus === 'Active';
+                        const isNotStarted = liveStatus === 'Not Started';
+                        const pnl = live?.pnl;
+                        const winRate = live?.winRate;
+                        const trades = live?.trades;
+                        const hasLiveMetrics = trades > 0;
 
                         return (
                             <TouchableOpacity
@@ -191,32 +271,33 @@ const ActiveStrategies = () => {
                             >
                                 <View style={styles.strategyHeader}>
                                     <View style={styles.strategyInfo}>
-                                        <Text style={styles.strategyName}>{strategy.name}</Text>
+                                        <View style={styles.nameRow}>
+                                            <Text style={styles.strategyName}>{strategy.name}</Text>
+                                        </View>
                                         <View style={styles.typeContainer}>
                                             <View style={[styles.assetTag, getAssetClassStyle(strategy.assetClass)]}>
                                                 <Text style={styles.assetTagText}>{strategy.assetClass || '—'}</Text>
                                             </View>
-                                            <Text style={styles.strategyType}>
-                                                {strategy.strategyType || 'Custom'}
-                                            </Text>
                                         </View>
                                     </View>
 
-                                    {/* Actions */}
                                     <View style={styles.actions}>
-                                        {/* Status Badge */}
                                         <View style={[
                                             styles.statusBadge,
-                                            { backgroundColor: isActive ? '#14532d' : '#92400e' }
+                                            { backgroundColor: isActive ? '#14532d' : isNotStarted ? '#1e2937' : '#92400e' }
                                         ]}>
-                                            <Text style={styles.statusText}>
-                                                {currentStatus}
+                                            {isActive ? (
+                                                <Animated.View style={[styles.liveDot, { opacity: blinkAnim }]} />
+                                            ) : liveStatus === 'Paused' ? (
+                                                <View style={[styles.liveDot, { backgroundColor: '#f59e0b', opacity: 1 }]} />
+                                            ) : null}
+                                            <Text style={[styles.statusText, { color: isNotStarted ? '#94a3b8' : '#f1f5f9' }]}>
+                                                {isNotStarted ? 'Not Started' : liveStatus}
                                             </Text>
                                         </View>
 
-                                        {/* Toggle Button */}
                                         <TouchableOpacity
-                                            style={[styles.controlButton, isActive && styles.activeControl]}
+                                            style={[styles.controlButton, isActive && styles.activeControl, isNotStarted && { borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}
                                             onPress={(e) => {
                                                 e.stopPropagation();
                                                 handleToggleStatus(strategy._id);
@@ -225,11 +306,10 @@ const ActiveStrategies = () => {
                                             <Ionicons
                                                 name={isActive ? 'pause' : 'play'}
                                                 size={20}
-                                                color="#e2e8f0"
+                                                color={isNotStarted ? '#22c55e' : '#e2e8f0'}
                                             />
                                         </TouchableOpacity>
 
-                                        {/* Unfollow */}
                                         <TouchableOpacity
                                             style={styles.controlButton}
                                             onPress={(e) => {
@@ -246,14 +326,12 @@ const ActiveStrategies = () => {
                                     </View>
                                 </View>
 
-                                {/* Description */}
                                 {strategy.description && (
                                     <Text style={styles.description} numberOfLines={2}>
                                         {strategy.description}
                                     </Text>
                                 )}
 
-                                {/* Tags */}
                                 <View style={styles.tagsContainer}>
                                     {strategy.symbols?.slice(0, 2).map((symbol, i) => (
                                         <View key={i} style={styles.tag}>
@@ -272,32 +350,66 @@ const ActiveStrategies = () => {
                                     ))}
                                 </View>
 
-                                {/* Metrics */}
-                                <View style={styles.metricsRow}>
-                                    <View style={styles.metric}>
-                                        <Text style={[
-                                            styles.metricValue,
-                                            { color: String(strategy.pnl || '').startsWith('-') ? '#ef4444' : '#22c55e' }
-                                        ]}>
-                                            {strategy.pnl || '—'}
-                                        </Text>
-                                        <Text style={styles.metricLabel}>P&L</Text>
+                                {isNotStarted ? (
+                                    <View style={styles.notStartedContainer}>
+                                        <MaterialCommunityIcons name="rocket-launch" size={20} color="#22c55e" />
+                                        <Text style={styles.notStartedText}>Configure and start from strategy details</Text>
                                     </View>
-
-                                    <View style={styles.metric}>
-                                        <Text style={[styles.metricValue, { color: '#60a5fa' }]}>
-                                            {strategy.winRate || '—'}
-                                        </Text>
-                                        <Text style={styles.metricLabel}>Win Rate</Text>
+                                ) : !live ? (
+                                    dataTimedOut ? (
+                                        <View style={styles.metricsRow}>
+                                            <View style={styles.metric}>
+                                                <Text style={[styles.metricValue, { color: '#64748b' }]}>—</Text>
+                                                <Text style={styles.metricLabel}>P&L</Text>
+                                            </View>
+                                            <View style={styles.metricDivider} />
+                                            <View style={styles.metric}>
+                                                <Text style={[styles.metricValue, { color: '#64748b' }]}>—</Text>
+                                                <Text style={styles.metricLabel}>Win Rate</Text>
+                                            </View>
+                                            <View style={styles.metricDivider} />
+                                            <View style={styles.metric}>
+                                                <Text style={[styles.metricValue, { color: '#64748b' }]}>0</Text>
+                                                <Text style={styles.metricLabel}>Trades</Text>
+                                            </View>
+                                        </View>
+                                    ) : (
+                                        <View style={styles.metricsRow}>
+                                            {['P&L', 'Win Rate', 'Trades'].map(label => (
+                                                <View key={label} style={styles.metric}>
+                                                    <ActivityIndicator size="small" color="#64748b" />
+                                                    <Text style={styles.metricLabel}>{label}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    )
+                                ) : (
+                                    <View style={styles.metricsRow}>
+                                        <View style={styles.metric}>
+                                            <Text style={[
+                                                styles.metricValue,
+                                                { color: pnl !== undefined ? (pnl < 0 ? '#ef4444' : '#22c55e') : '#64748b' }
+                                            ]}>
+                                                {pnl !== undefined ? formatCurrency(pnl) : '—'}
+                                            </Text>
+                                            <Text style={styles.metricLabel}>P&L</Text>
+                                        </View>
+                                        <View style={styles.metricDivider} />
+                                        <View style={styles.metric}>
+                                            <Text style={[styles.metricValue, { color: '#60a5fa' }]}>
+                                                {winRate !== undefined ? formatPercent(winRate) : '—'}
+                                            </Text>
+                                            <Text style={styles.metricLabel}>Win Rate</Text>
+                                        </View>
+                                        <View style={styles.metricDivider} />
+                                        <View style={styles.metric}>
+                                            <Text style={styles.metricValue}>
+                                                {trades !== undefined ? trades : '—'}
+                                            </Text>
+                                            <Text style={styles.metricLabel}>Trades</Text>
+                                        </View>
                                     </View>
-
-                                    <View style={styles.metric}>
-                                        <Text style={styles.metricValue}>
-                                            {strategy.trades || '—'}
-                                        </Text>
-                                        <Text style={styles.metricLabel}>Trades</Text>
-                                    </View>
-                                </View>
+                                )}
                             </TouchableOpacity>
                         );
                     }}
@@ -406,11 +518,24 @@ const styles = StyleSheet.create({
         flex: 1,
         marginRight: 12,
     },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 6,
+    },
+    liveDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#22c55e',
+    },
     strategyName: {
         fontSize: 17.5,
         fontWeight: '700',
         color: '#f8fafc',
-        marginBottom: 6,
+        flexShrink: 1,
+        textTransform: 'capitalize'
     },
     typeContainer: {
         flexDirection: 'row',
@@ -443,6 +568,9 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         minWidth: 78,
         alignItems: 'center',
+        display: 'flex',
+        flexDirection: 'row',
+        gap: 5,
     },
     statusText: {
         color: '#f1f5f9',
@@ -498,6 +626,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flex: 1,
     },
+    metricDivider: {
+        width: 1,
+        height: 28,
+        backgroundColor: '#1e2937',
+        alignSelf: 'center',
+    },
     metricValue: {
         fontSize: 18,
         fontWeight: '700',
@@ -526,6 +660,20 @@ const styles = StyleSheet.create({
         marginTop: 8,
         lineHeight: 20,
         maxWidth: '80%',
+    },
+    notStartedContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#334155',
+    },
+    notStartedText: {
+        color: '#64748b',
+        fontSize: 13.5,
+        fontWeight: '500',
     },
     noResultsContainer: {
         alignItems: 'center',

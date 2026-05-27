@@ -1,4 +1,4 @@
-import ActiveStrategies from '@/components/ActiveStrategies';
+import ActiveStrategies from '@/components/algoTradingComponents/ActiveStrategies';
 import HomeHeader from '@/components/HomeHeader';
 import IndexCard from '@/components/IndexCard';
 import { useContext, useEffect, useState } from 'react';
@@ -9,7 +9,6 @@ import { formatCurrency } from '@/utils/numberFormatter';
 const AlgoTrading = () => {
     const { algotradingData } = useContext(AlgoTradingContext);
     const summary = algotradingData?.summary;
-    const activeStrategies = algotradingData?.activeStrategies;
     const [data, setData] = useState({
         dashboardMetrics: []
     });
@@ -20,7 +19,7 @@ const AlgoTrading = () => {
         setData({
             dashboardMetrics: [
                 {
-                    id: 'total-portfolio',
+                    id: 'total-pl',
                     label: 'Total P&L',
                     value: formatCurrency(summary?.totalPL),
                     changeColor: '#34C759',
@@ -28,7 +27,7 @@ const AlgoTrading = () => {
                     icon: 'dollar',
                 },
                 {
-                    id: 'active-strategies',
+                    id: 'avg-win-rate',
                     label: 'Avg Win Rate',
                     value: summary?.avgWinRate ?? 0,
                     iconColor: '#60a5fa',
@@ -36,7 +35,7 @@ const AlgoTrading = () => {
                     icon: 'line-chart',
                 },
                 {
-                    id: 'win-rate',
+                    id: 'total-trades',
                     label: 'Total Trades',
                     value: summary?.totalTrades ?? 0,
                     iconColor: '#facc15',
@@ -44,12 +43,12 @@ const AlgoTrading = () => {
                     icon: 'activity',
                 },
                 {
-                    id: 'max-drawdown',
-                    label: 'Active Strategies',
+                    id: 'active-strategies',
+                    label: 'Following',
                     value: summary?.activeStrategies ?? 0,
-                    iconColor: '#c084fc',
-                    changeColor: '#FF3B15',
-                    icon: 'play',
+                    iconColor: '#22c55e',
+                    changeColor: '#34C759',
+                    icon: 'play-circle',
                 },
             ],
         });
@@ -59,7 +58,7 @@ const AlgoTrading = () => {
 
     const components = [
         { id: '1', component: <IndexCard data={data} page="algo" /> },
-        { id: '2', component: <ActiveStrategies data={activeStrategies} /> },
+        { id: '2', component: <ActiveStrategies /> },
     ];
 
     const renderItem = ({ item }) => (
