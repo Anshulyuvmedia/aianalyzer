@@ -1,12 +1,14 @@
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import React from 'react';
+import React, { useContext } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { FontAwesome, Feather, Ionicons } from '@expo/vector-icons';
-import { useRouter, useNavigation } from 'expo-router'; // Import useNavigation
+import { useRouter, useNavigation } from 'expo-router';
+import { NotificationsContext } from '@/context/NotificationsContext';
 
 const HomeHeader = ({ page, title, action, subtitle }) => {
     const router = useRouter();
-    const navigation = useNavigation(); // Get navigation object
+    const navigation = useNavigation();
+    const { unreadCount } = useContext(NotificationsContext);
 
     const handleBackPress = () => {
         if (page === 'home') {
@@ -73,7 +75,12 @@ const HomeHeader = ({ page, title, action, subtitle }) => {
                             style={styles.gradientBorder}
                         >
                             <View style={styles.coinContainer}>
-                                <Ionicons name="notifications-outline" size={24} color="white" />
+                                <Ionicons name="notifications-outline" size={24} color="white" style={{ overflow: 'visible' }} />
+                                {unreadCount > 0 && (
+                                    <View style={styles.badge}>
+                                        <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                                    </View>
+                                )}
                             </View>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -133,5 +140,22 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontFamily: 'Sora-Bold',
         textAlign: 'center',
+    },
+    badge: {
+        position: 'absolute',
+        top: -1,
+        left: -5,
+        backgroundColor: '#EF4444',
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+    },
+    badgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: '700',
     },
 });

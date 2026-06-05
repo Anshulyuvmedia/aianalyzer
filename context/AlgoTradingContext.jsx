@@ -122,7 +122,7 @@ export const AlgoTradingProvider = ({ children }) => {
             const { _id } = JSON.parse(savedUser);
             const response = await api.get(`/api/appdata/algotrading-data?userid=${_id}&_t=${Date.now()}`);
 
-            console.log('AlgoTrading API response:', JSON.stringify(response.data?.summary));
+            // console.log('AlgoTrading API response:', JSON.stringify(response.data?.summary));
             setAlgotradingData(response.data);
             await AsyncStorage.setItem('algotradingCache', JSON.stringify(response.data));
         } catch (error) {

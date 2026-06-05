@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "33586067553",
+    "project_id": "ai-analyzer-787cd",
+    "storage_bucket": "ai-analyzer-787cd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:33586067553:android:6b78a833094d3c94301220",
+        "android_client_info": {
+          "package_name": "com.ai.analyzer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9fkBuyOdxGIRuty6bvVNbh3i70EB1uxw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +22,8 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.ai.analyzer"
+      "package": "com.ai.analyzer",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -36,7 +42,16 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/withGoogleServices",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/ailogo.png",
+          "color": "#00e676"
+        }
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
