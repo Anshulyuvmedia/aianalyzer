@@ -121,7 +121,7 @@ const StrategyPerformance = () => {
 
     return (
         <View style={styles.container}>
-            <HomeHeader page="" title="Strategy Results" subtitle={localStrategy?.description} />
+            <HomeHeader page="chat" title="Strategy Settings" subtitle={localStrategy?.description} />
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <AiTrading
                     strategy={localStrategy}

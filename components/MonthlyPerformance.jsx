@@ -1,17 +1,11 @@
-import { StyleSheet, Text, View,} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { AntDesign } from '@expo/vector-icons/';
+import { formatCurrency, formatPercent } from '@/utils/numberFormatter';
 
-const MonthlyPerformance = () => {
-    const performanceData = [
-        { month: 'Jan 2024', trades: 42, profit: '$2,340.5', winRate: '76.2%' },
-        { month: 'Dec 2023', trades: 38, profit: '$1,890.3', winRate: '71.1%' },
-        { month: 'Nov 2023', trades: 45, profit: '$3,210.8', winRate: '80%' },
-        { month: 'Oct 2023', trades: 39, profit: '$1,560.4', winRate: '69.2%' },
-        { month: 'Sep 2023', trades: 41, profit: '$2,780.9', winRate: '75.6%' },
-        { month: 'Aug 2023', trades: 42, profit: '$1,920.6', winRate: '73.8%' },
-    ];
+const MonthlyPerformance = ({ data }) => {
+    const rows = data && data.length > 0 ? data : [];
 
     return (
         <LinearGradient
@@ -28,22 +22,28 @@ const MonthlyPerformance = () => {
             >
                 <View style={styles.container}>
                     <View style={styles.content}>
-                        <View className="flex-row">
+                        <View style={styles.headerRow}>
                             <AntDesign name="barschart" size={24} color="#5998e5" />
                             <Text style={styles.header}>Monthly Performance</Text>
                         </View>
-                        {performanceData.map((data, index) => (
-                            <View key={index} style={styles.performanceItem}>
-                                <View>
-                                    <Text style={styles.month}>{data.month}</Text>
-                                    <Text style={styles.metric}>Trades: {data.trades}</Text>
+                        {rows.length === 0 ? (
+                            <Text style={styles.emptyText}>No trade history available</Text>
+                        ) : (
+                            rows.map((row, index) => (
+                                <View key={index} style={styles.performanceItem}>
+                                    <View>
+                                        <Text style={styles.month}>{row.month}</Text>
+                                        <Text style={styles.metric}>Trades: {row.trades}</Text>
+                                    </View>
+                                    <View>
+                                        <Text style={[styles.metricPrice, row.profit < 0 && styles.metricLoss]}>
+                                            Profit: {formatCurrency(row.profit)}
+                                        </Text>
+                                        <Text style={styles.metric}>Win Rate: {formatPercent(row.winRate)}</Text>
+                                    </View>
                                 </View>
-                                <View>
-                                    <Text style={styles.metricPrice}>Profit: {data.profit}</Text>
-                                    <Text style={styles.metric}>Win Rate: {data.winRate}</Text>
-                                </View>
-                            </View>
-                        ))}
+                            ))
+                        )}
                     </View>
                 </View>
             </LinearGradient>
@@ -67,11 +67,15 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         padding: 15,
     },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
     header: {
         color: '#fff',
         fontSize: 18,
         fontWeight: '600',
-        marginBottom: 20,
         marginStart: 5,
     },
     performanceItem: {
@@ -96,5 +100,14 @@ const styles = StyleSheet.create({
         color: '#47de80',
         fontSize: 14,
         fontWeight: 'bold',
+    },
+    metricLoss: {
+        color: '#ef4444',
+    },
+    emptyText: {
+        color: '#6b7280',
+        fontSize: 14,
+        textAlign: 'center',
+        paddingVertical: 20,
     },
 });

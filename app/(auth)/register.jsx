@@ -3,16 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import {
-    Alert,
-    Animated,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { Alert, Animated, Image, StyleSheet, Text, TextInput, TouchableOpacity, View, } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import RBSheet from "react-native-raw-bottom-sheet";
 import { API_BASE_URL } from "@/config/api";
@@ -28,6 +19,8 @@ const Register = () => {
 
     const [phoneNumber, setphoneNumber] = useState("");
     const [phoneError, setPhoneError] = useState("");
+
+    const [referralCode, setReferralCode] = useState('');
 
     const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
     const otpRefs = useRef([]);
@@ -95,7 +88,8 @@ const Register = () => {
             const res = await axios.post(`${API_BASE_URL}/api/register`, {
                 name,
                 phoneNumber,
-                email
+                email,
+                referralCode: referralCode || undefined,
             });
 
             // console.log(res.data);
@@ -172,8 +166,8 @@ const Register = () => {
 
             setLoadingVerify(false); // stop loading
 
-            if (res.data.status === true) {
-                setapiData(res.data.userdata);
+            if (res.data.success === true) {
+                setapiData(res.data.user);
                 otpSheetRef.current.close();
                 Alert.alert("Success", "You have been registered successfully.!!");
             } else {
@@ -247,6 +241,22 @@ const Register = () => {
                         />
                     </View>
                     {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+                </View>
+
+                {/* REFERRAL CODE (OPTIONAL) */}
+                <View style={styles.inputContainer}>
+                    <View style={styles.inputWrapper}>
+                        <Ionicons name="gift-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                        <TextInput
+                            style={[styles.input, styles.inputWithIcon]}
+                            placeholder="Referral Code (optional)"
+                            placeholderTextColor="#6B7280"
+                            value={referralCode}
+                            onChangeText={(val) => setReferralCode(val.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                            autoCapitalize="characters"
+                            maxLength={8}
+                        />
+                    </View>
                 </View>
 
                 {/* Sign Up */}

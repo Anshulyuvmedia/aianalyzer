@@ -1,5 +1,4 @@
 import HomeHeader from '@/components/HomeHeader';
-import ReferralAccess from '@/components/ReferralAccess';
 import SupportedBrokers from '@/components/SupportedBrokers';
 import { useContext, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
@@ -10,7 +9,6 @@ const BrokerConnection = () => {
     const [refreshing, setRefreshing] = useState(false);
     const components = [
         { id: '1', component: <SupportedBrokers /> },
-        { id: '2', component: <ReferralAccess referralData={referralData} /> },
     ];
     const renderItem = ({ item }) => (
         <View style={styles.section}>

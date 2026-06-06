@@ -7,13 +7,13 @@ import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const STATUS_COLORS = {
-  'Active': { bg: '#14532d', text: '#22c55e', dot: '#22c55e' },
-  'Paused': { bg: '#78350f', text: '#f59e0b', dot: '#f59e0b' },
-  'Not Started': { bg: '#1e293b', text: '#94a3b8', dot: '#64748b' },
-  'starting': { bg: '#1e3a5f', text: '#60a5fa', dot: '#3b82f6' },
-  'pausing': { bg: '#1e3a5f', text: '#f59e0b', dot: '#f59e0b' },
-  'running': { bg: '#14532d', text: '#22c55e', dot: '#22c55e' },
-  'error': { bg: '#7f1d1d', text: '#ef4444', dot: '#ef4444' },
+    'Active': { bg: '#14532d', text: '#22c55e', dot: '#22c55e' },
+    'Paused': { bg: '#78350f', text: '#f59e0b', dot: '#f59e0b' },
+    'Not Started': { bg: '#1e293b', text: '#94a3b8', dot: '#64748b' },
+    'starting': { bg: '#1e3a5f', text: '#60a5fa', dot: '#3b82f6' },
+    'pausing': { bg: '#1e3a5f', text: '#f59e0b', dot: '#f59e0b' },
+    'running': { bg: '#14532d', text: '#22c55e', dot: '#22c55e' },
+    'error': { bg: '#7f1d1d', text: '#ef4444', dot: '#ef4444' },
 };
 
 const AiTrading = ({ strategy, algotradingData, lastTradeTime, pnl, engineStatus, onToggleStatus, onUnfollow, userConfig, configLoaded, onSaveConfig, capital }) => {

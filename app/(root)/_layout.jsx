@@ -33,6 +33,9 @@ export default function RootMainStackLayout() {
             <Stack.Screen name="Portfolio/PositionDetailScreen" options={{ headerShown: false }} />
             <Stack.Screen name="Portfolio/TradesScreen" options={{ headerShown: false }} />
             <Stack.Screen name="Portfolio/modifyOrder/[id]" options={{ headerShown: false }} />
+
+            <Stack.Screen name="Referral/ReferralAccess" options={{ headerShown: false }} />
+
         </Stack>
     );
 }

@@ -1,43 +1,27 @@
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
+import React from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather, Octicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker'; // Ensure this package is installed
+import { formatCurrency, formatPercent } from '@/utils/numberFormatter';
+import LineChartComponent from '@/components/charts/LineChartComponent';
 
-const PerformanceReports = () => {
-    const [reportType, setReportType] = useState('performance');
-    const [timePeriod, setTimePeriod] = useState('month');
-    const [dateRange, setDateRange] = useState('This Month'); // Sync with timePeriod
+const PerformanceReports = ({ metrics, equityCurve }) => {
+    const { totalTrades = 0, winRate = 0, maxDrawdown = 0, totalProfit = 0, avgWin = 0 } = metrics || {};
 
-    const metrics = [
-        { label: 'Total Trades', value: '247', color: '#ffffff' },
-        { label: 'Win Rate', value: '74.9%', color: '#22c55e' },
-        { label: 'Profit Factor', value: '2.34', color: '#60a5fa' },
-        { label: 'Max Drawdown', value: '8.7%', color: '#ef4444' },
-        { label: 'Total Profit', value: '$15,670.5', color: '#22c55e' },
-        { label: 'Avg Win', value: '$156.40', color: '#facc15' },
+    const metricItems = [
+        { label: 'Total Trades', value: String(totalTrades), color: '#ffffff' },
+        { label: 'Win Rate', value: formatPercent(winRate), color: '#22c55e' },
+        { label: 'Max Drawdown', value: formatPercent(maxDrawdown), color: '#ef4444' },
+        { label: 'Total Profit', value: formatCurrency(totalProfit), color: '#22c55e' },
+        { label: 'Avg Win', value: formatCurrency(avgWin), color: '#facc15' },
     ];
 
-    const handleDateRangeChange = (range) => {
-        const periodMap = {
-            week: 'This Week',
-            month: 'This Month',
-            quarter: 'This Quarter',
-            year: 'This Year',
-            all: 'All Time',
-        };
-        setTimePeriod(range);
-        setDateRange(periodMap[range] || 'This Month');
-        console.log('Selected time period:', range);
-    };
-
-    const handleExportPDF = () => {
-        console.log('Exporting to PDF');
-    };
-
-    const handleExportCSV = () => {
-        console.log('Exporting to CSV');
-    };
+    const chartData = equityCurve?.length > 1
+        ? {
+            labels: [],
+            values: equityCurve.map(p => p.value),
+        }
+        : null;
 
     return (
         <LinearGradient
@@ -59,59 +43,26 @@ const PerformanceReports = () => {
                                 <Octicons name="checklist" size={24} color="#60a5fa" />
                                 <Text style={styles.header}>Reports</Text>
                             </View>
-                            <View style={styles.controlsRow}>
-                                <TouchableOpacity style={styles.exportButton} onPress={handleExportPDF}>
-                                    <Text style={styles.exportText}>Export PDF</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.exportButtonCSV} onPress={handleExportCSV}>
-                                    <Text style={styles.exportText}>Export CSV</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        <View style={styles.controlsRow}>
-                            <View style={styles.pickerContainer}>
-                                <Picker
-                                    selectedValue={reportType}
-                                    onValueChange={(itemValue) => setReportType(itemValue)}
-                                    style={styles.picker}
-                                    dropdownIconColor="#A0AEC0"
-                                >
-                                    <Picker.Item label="Performance Summary" value="performance" />
-                                    <Picker.Item label="Trade History" value="trades" />
-                                    <Picker.Item label="Strategy Analysis" value="strategies" />
-                                    <Picker.Item label="Risk Analysis" value="risk" />
-                                </Picker>
-                            </View>
-                            <View style={styles.pickerContainer}>
-                                <Picker
-                                    selectedValue={timePeriod}
-                                    onValueChange={(itemValue) => handleDateRangeChange(itemValue)}
-                                    style={styles.picker}
-                                    dropdownIconColor="#A0AEC0"
-                                >
-                                    <Picker.Item label="This Week" value="week" />
-                                    <Picker.Item label="This Month" value="month" />
-                                    <Picker.Item label="This Quarter" value="quarter" />
-                                    <Picker.Item label="This Year" value="year" />
-                                    <Picker.Item label="All Time" value="all" />
-                                </Picker>
-                            </View>
                         </View>
                         <View style={styles.metricsContainer}>
-                            {metrics.map((metric, index) => (
+                            {metricItems.map((metric, index) => (
                                 <View key={index} style={styles.metricBox}>
                                     <Text style={[styles.metricValue, { color: metric.color }]}>{metric.value}</Text>
                                     <Text style={styles.metricLabel}>{metric.label}</Text>
                                 </View>
                             ))}
                         </View>
-                        <View style={styles.chartSection}>
+                        {/* <View style={styles.chartSection}>
                             <Text style={styles.sectionTitle}>Equity Curve</Text>
-                            <View style={styles.chartPlaceholder}>
-                                <Feather name="trending-up" size={30} color="#9ca3af" />
-                                <Text style={styles.placeholderText}>Detailed equity curve chart would appear here</Text>
-                            </View>
-                        </View>
+                            {chartData ? (
+                                <LineChartComponent data={chartData} />
+                            ) : (
+                                <View style={styles.chartPlaceholder}>
+                                    <Feather name="trending-up" size={30} color="#9ca3af" />
+                                    <Text style={styles.placeholderText}>No equity data available yet</Text>
+                                </View>
+                            )}
+                        </View> */}
                     </View>
                 </View>
             </LinearGradient>

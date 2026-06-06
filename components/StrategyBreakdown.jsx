@@ -3,13 +3,10 @@ import React from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 
-const StrategyBreakdown = () => {
-    const performanceData = [
-        { name: 'Momentum Scalper', trades: 42, profit: '$2,340.5', winRate: '76.2%' },
-        { name: 'Breakout Hunter', trades: 38, profit: '$1,890.3', winRate: '71.1%' },
-        { name: 'Mean Reversion Pro', trades: 45, profit: '$3,210.8', winRate: '80%' },
-        { name: 'Copy Trading', trades: 39, profit: '$1,560.4', winRate: '69.2%' },
-    ];
+import { formatCurrency, formatPercent } from '@/utils/numberFormatter';
+
+const StrategyBreakdown = ({ data }) => {
+    const rows = data && data.length > 0 ? data : [];
 
     return (
         <LinearGradient
@@ -30,18 +27,24 @@ const StrategyBreakdown = () => {
                             <Feather name="pie-chart" size={24} color="#ac78e3" />
                             <Text style={styles.header}>Strategy Breakdown</Text>
                         </View>
-                        {performanceData.map((data, index) => (
-                            <View key={index} style={styles.performanceItem}>
-                                <View style={styles.leftColumn}>
-                                    <Text style={styles.name}>{data.name}</Text>
-                                    <Text style={styles.metric}>Trades: {data.trades}</Text>
+                        {rows.length === 0 ? (
+                            <Text style={styles.emptyText}>No strategies with trade data</Text>
+                        ) : (
+                            rows.map((row, index) => (
+                                <View key={index} style={styles.performanceItem}>
+                                    <View style={styles.leftColumn}>
+                                        <Text style={styles.name}>{row.name}</Text>
+                                        <Text style={styles.metric}>Trades: {row.trades}</Text>
+                                    </View>
+                                    <View style={styles.rightColumn}>
+                                        <Text style={[styles.metricPrice, row.profit < 0 && styles.metricLoss]}>
+                                            Profit: {formatCurrency(row.profit)}
+                                        </Text>
+                                        <Text style={styles.metric}>Win Rate: {formatPercent(row.winRate)}</Text>
+                                    </View>
                                 </View>
-                                <View style={styles.rightColumn}>
-                                    <Text style={styles.metricPrice}>Profit: {data.profit}</Text>
-                                    <Text style={styles.metric}>Win Rate: {data.winRate}</Text>
-                                </View>
-                            </View>
-                        ))}
+                            ))
+                        )}
                     </View>
                 </View>
             </LinearGradient>
@@ -107,5 +110,14 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
         marginBottom: 5,
+    },
+    metricLoss: {
+        color: '#ef4444',
+    },
+    emptyText: {
+        color: '#6b7280',
+        fontSize: 14,
+        textAlign: 'center',
+        paddingVertical: 20,
     },
 });
